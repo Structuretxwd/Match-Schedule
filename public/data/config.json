@@ -1,0 +1,5 @@
+{
+  "repo": { "owner": "your-github-name", "repo": "match-schedule", "branch": "main" },
+  "admins": [{ "login": "your-github-name", "role": "admin" }],
+  "requiredTokenScopes": { "contents": "write", "path": "public/data/" }
+}
