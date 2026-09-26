@@ -1,13 +1,22 @@
 'use client'
 
-import Link from 'next/link'
+import { useState } from 'react'
 import { AdminGate } from '@/components/auth/AdminGate'
 import { LoginForm } from '@/components/auth/LoginForm'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { CreateEventForm } from './CreateEventForm'
+import { EventEditPanel } from './EventEditPanel'
+import { EventList } from './EventList'
 import type { EventSummary } from '@/lib/data/schema'
 
 export function AdminPage({ events }: { events: EventSummary[] }) {
   const { ready, isAdmin, login, role, signOut } = useAuth()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [pending, setPending] = useState<string[]>([])
+
+  function addPending(text: string) {
+    setPending((current) => (current.includes(text) ? current : [...current, text]))
+  }
 
   return (
     <div className="space-y-6">
@@ -37,26 +46,41 @@ export function AdminPage({ events }: { events: EventSummary[] }) {
         <LoginForm />
       )}
 
+      {pending.length > 0 ? (
+        <div className="space-y-1 rounded border border-wb/40 bg-panel px-3 py-2 text-xs">
+          <p className="text-wb">{`${pending.length} 项改动已提交，等待 Actions 重建（约 1–2 分钟）`}</p>
+          <ul className="list-inside list-disc text-muted">
+            {pending.map((text) => (
+              <li key={text}>{text}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <AdminGate
         fallback={<p className="text-xs text-muted">登录后可创建赛事、维护队伍与发布公告。</p>}
       >
         <section className="space-y-2">
-          <h2 className="text-sm font-medium">赛事</h2>
-          {events.length === 0 ? (
-            <p className="text-xs text-muted">还没有任何赛事数据文件。</p>
-          ) : (
-            <ul className="divide-y divide-line rounded border border-line bg-panel text-sm">
-              {events.map((e) => (
-                <li key={e.id} className="flex items-center justify-between gap-3 px-3 py-2">
-                  <Link href={`/event/${e.id}/`} className="hover:text-wb">
-                    {e.name}
-                  </Link>
-                  <span className="text-xs text-muted">{`${e.finishedMatches} / ${e.totalMatches} 场`}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <h2 className="text-sm font-medium">赛事列表</h2>
+          <p className="text-[11px] text-muted">
+            列表来自构建产物，新建或删除的赛事要到本次重建完成后才会在这里变化。
+          </p>
+          <EventList
+            events={events}
+            selectedId={selectedId}
+            onSelect={(id) => setSelectedId(selectedId === id ? null : id)}
+            onDeleted={() => setSelectedId(null)}
+          />
         </section>
+
+        {selectedId ? (
+          <section className="space-y-2">
+            <h2 className="text-sm font-medium">{`编辑：${selectedId}`}</h2>
+            <EventEditPanel eventId={selectedId} onSaved={addPending} />
+          </section>
+        ) : null}
+
+        <CreateEventForm onCreated={(id, name) => addPending(`创建赛事「${name}」（${id}）`)} />
       </AdminGate>
     </div>
   )
