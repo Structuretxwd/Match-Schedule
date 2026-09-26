@@ -2,9 +2,12 @@ import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { AuthProvider } from '@/components/auth/AuthProvider'
+import { buildNewEvent } from '@/lib/admin/newEvent'
 import type { AppConfig, EventSummary } from '@/lib/data/schema'
+import type { TournamentEvent } from '@/lib/data/schema'
 import { AdminPage } from './AdminPage'
 import { CreateEventForm } from './CreateEventForm'
+import { EventEditPanel } from './EventEditPanel'
 import { EventList } from './EventList'
 
 const CONFIG: AppConfig = {
@@ -108,5 +111,42 @@ describe('AdminPage', () => {
     expect(html).toContain('退出登录')
     expect(html).toContain('2026 春季赛')
     expect(html).toContain('创建赛事')
+  })
+})
+
+/** 直接复用 buildNewEvent 造一份合法赛事，顺带验证它生成的数据能被渲染 */
+const EVENT: TournamentEvent = {
+  ...buildNewEvent({
+    id: 'spring-2026',
+    name: '2026 春季赛',
+    bracketSize: 4,
+    defaultBO: 3,
+    grandFinalBO: 5,
+    teamNames: ['赤霄', '沧溟', '流火', '玄鸟'],
+    now: '2026-09-25T10:00:00+08:00',
+  }),
+  status: 'ongoing',
+  announcements: [{ id: 'a1', content: '报名截止', createdAt: '2026-09-24T10:00:00+08:00' }],
+}
+
+describe('EventEditPanel', () => {
+  it('注入数据后渲染队伍名称、选手输入框与公告列表', () => {
+    const html = render(<EventEditPanel eventId="spring-2026" initialEvent={EVENT} />)
+    expect(html).toContain('赤霄')
+    expect(html).toContain('玄鸟')
+    expect(html).toContain('name="players-t1"')
+    expect(html).toContain('报名截止')
+    expect(html).toContain('发布公告')
+    expect(html).toContain('保存')
+  })
+
+  it('队伍名称已填入输入框，而不是留给用户重新输入', () => {
+    const html = render(<EventEditPanel eventId="spring-2026" initialEvent={EVENT} />)
+    expect(html).toContain('value="赤霄"')
+  })
+
+  it('未注入数据时先显示加载中', () => {
+    const html = render(<EventEditPanel eventId="spring-2026" />)
+    expect(html).toContain('正在加载 spring-2026')
   })
 })
