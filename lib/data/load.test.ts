@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import fs from 'node:fs'
-import { listEventIds, listEvents, loadEvent } from './load'
+import { listEventIds, listEvents, loadConfig, loadEvent } from './load'
 
 describe('load', () => {
   it('列出仓库中的示例赛事', () => {
@@ -32,5 +32,24 @@ describe('load', () => {
     expect(found).toBeDefined()
     expect(found!.totalMatches).toBe(14)
     expect(found!.finishedMatches).toBe(2)
+  })
+})
+
+describe('loadConfig', () => {
+  it('读取管理员白名单、仓库坐标与所需权限', () => {
+    const cfg = loadConfig()
+    expect(cfg).not.toBeNull()
+    expect(cfg!.repo.repo).toBe('match-schedule')
+    expect(cfg!.repo.branch).toBe('main')
+    expect(cfg!.admins.length).toBeGreaterThan(0)
+    expect(cfg!.requiredTokenScopes.path).toBe('public/data/')
+  })
+
+  it('配置损坏时返回 null 而非抛错（管理功能降级为禁用）', () => {
+    const read = vi.spyOn(fs, 'readFileSync').mockImplementation(() => '{ 这不是 JSON')
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(loadConfig()).toBeNull()
+    read.mockRestore()
+    log.mockRestore()
   })
 })
