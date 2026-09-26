@@ -239,8 +239,8 @@
       "round": 1,
       "index": 1,
       "bo": 3,
-      "scoreA": null,
-      "scoreB": null,
+      "scoreA": 2,
+      "scoreB": 1,
       "live": false,
       "scheduledAt": null,
       "referee": null,
@@ -1103,5 +1103,5 @@
     }
   ],
   "announcements": [],
-  "updatedAt": "2026-09-26T16:07:30.948Z"
+  "updatedAt": "2026-09-26T16:09:34.063Z"
 }
