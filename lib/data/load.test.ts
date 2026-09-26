@@ -39,7 +39,7 @@ describe('loadConfig', () => {
   it('读取管理员白名单、仓库坐标与所需权限', () => {
     const cfg = loadConfig()
     expect(cfg).not.toBeNull()
-    expect(cfg!.repo.repo).toBe('match-schedule')
+    expect(cfg!.repo.repo).toBe('Match-Schedule')
     expect(cfg!.repo.branch).toBe('main')
     expect(cfg!.admins.length).toBeGreaterThan(0)
     expect(cfg!.requiredTokenScopes.path).toBe('public/data/')

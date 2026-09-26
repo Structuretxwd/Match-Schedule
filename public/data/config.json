@@ -1,5 +1,5 @@
 {
-  "repo": { "owner": "your-github-name", "repo": "match-schedule", "branch": "main" },
-  "admins": [{ "login": "your-github-name", "role": "admin" }],
+  "repo": { "owner": "Structuretxwd", "repo": "Match-Schedule", "branch": "main" },
+  "admins": [{ "login": "Structuretxwd", "role": "admin" }],
   "requiredTokenScopes": { "contents": "write", "path": "public/data/" }
 }
