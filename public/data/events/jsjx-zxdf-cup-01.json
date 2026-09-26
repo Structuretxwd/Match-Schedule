@@ -241,7 +241,7 @@
       "bo": 3,
       "scoreA": null,
       "scoreB": null,
-      "live": false,
+      "live": true,
       "scheduledAt": null,
       "referee": null,
       "streamUrl": null,
@@ -1103,5 +1103,5 @@
     }
   ],
   "announcements": [],
-  "updatedAt": "2026-09-26T04:51:28.271Z"
+  "updatedAt": "2026-09-26T05:10:01.027Z"
 }
