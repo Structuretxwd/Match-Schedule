@@ -1,9 +1,23 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { AuthProvider } from '@/components/auth/AuthProvider'
 import { deriveBracket } from '@/lib/bracket/advance'
 import { generateTemplate } from '@/lib/bracket/generate'
-import type { TournamentEvent } from '@/lib/data/schema'
+import type { AppConfig, TournamentEvent } from '@/lib/data/schema'
 import { MatchDetailDialog } from './MatchDetailDialog'
+
+const CONFIG: AppConfig = {
+  repo: { owner: 'octo', repo: 'match-schedule', branch: 'main' },
+  admins: [{ login: 'admin-user', role: 'admin' }],
+  requiredTokenScopes: { contents: 'write', path: 'public/data/' },
+}
+
+const ADMIN_SESSION = {
+  login: 'admin-user',
+  token: 'github_pat_x',
+  role: 'admin' as const,
+  savedAt: 0,
+}
 
 function makeEvent(scores: Record<string, [number, number]> = {}): TournamentEvent {
   const n = 8 as const
@@ -41,10 +55,12 @@ function makeEvent(scores: Record<string, [number, number]> = {}): TournamentEve
   }
 }
 
-function render(matchId: string, scores = {}) {
+function render(matchId: string, scores = {}, session: typeof ADMIN_SESSION | null = null) {
   const d = deriveBracket(makeEvent(scores))
   return renderToStaticMarkup(
-    <MatchDetailDialog match={d.byId[matchId]} derived={d} onClose={() => {}} />,
+    <AuthProvider config={CONFIG} initialSession={session}>
+      <MatchDetailDialog match={d.byId[matchId]} derived={d} eventId="spring-2026" onClose={() => {}} />
+    </AuthProvider>,
   )
 }
 
@@ -87,5 +103,20 @@ describe('MatchDetailDialog', () => {
     const html = render('WB-R2-M1')
     expect(html).toContain('WB-R1-M1 胜者')
     expect(html).toContain('WB-R1-M2 胜者')
+  })
+
+  it('游客只看到提示，看不到录分表单', () => {
+    const html = render('WB-R1-M1')
+    expect(html).toContain('只有登录后的管理员可以录入或修改比分')
+    expect(html).not.toContain('aria-label="甲队局分"')
+  })
+
+  it('管理员看到录分表单、BO 提示与生效说明', () => {
+    const html = render('WB-R1-M1', {}, ADMIN_SESSION)
+    expect(html).toContain('aria-label="甲队局分"')
+    expect(html).toContain('aria-label="乙队局分"')
+    expect(html).toContain('BO3 · 先赢 2 局')
+    expect(html).toContain('清除比分')
+    expect(html).toContain('约 1–2 分钟后')
   })
 })

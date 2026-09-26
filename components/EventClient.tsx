@@ -1,10 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { deriveBracket } from '@/lib/bracket/advance'
 import type { TournamentEvent } from '@/lib/data/schema'
-import { useEventData } from '@/lib/useEventData'
+import { prunePending, useEventData, type PendingChange } from '@/lib/useEventData'
 import { formatDateTime } from '@/lib/view'
 import { BracketView } from './BracketView'
 import { MatchDetailDialog } from './MatchDetailDialog'
@@ -42,9 +42,18 @@ export function EventClient({ initial, view }: EventClientProps) {
 
 function EventLive({ initial, view }: { initial: TournamentEvent; view: EventViewKind }) {
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
-  const { event, error, lastFetchedAt } = useEventData(initial)
+  const [pending, setPending] = useState<PendingChange[]>([])
+  const { event, remote, error, lastFetchedAt } = useEventData(initial, pending)
   const derived = useMemo(() => deriveBracket(event), [event])
   const selected = selectedMatchId ? derived.byId[selectedMatchId] : null
+
+  // Actions 重建完成后，把已生效的改动从待生效列表里移除，避免它覆盖之后的新比分
+  useEffect(() => {
+    setPending((current) => {
+      const next = prunePending(remote, current)
+      return next.length === current.length ? current : next
+    })
+  }, [remote])
 
   const finished = event.matches.filter((m) => m.scoreA !== null && m.scoreB !== null).length
   const champion = derived.championId
@@ -72,6 +81,12 @@ function EventLive({ initial, view }: { initial: TournamentEvent; view: EventVie
         {error ? (
           <p className="rounded border border-danger/40 bg-panel px-3 py-2 text-xs text-danger">
             {`数据刷新失败：${error}。页面显示的可能是稍早的数据。`}
+          </p>
+        ) : null}
+
+        {pending.length > 0 ? (
+          <p className="rounded border border-line bg-panel px-3 py-2 text-xs text-muted">
+            {`已提交 ${pending.length} 处改动，等待 GitHub Actions 重建后生效（约 1–2 分钟）。`}
           </p>
         ) : null}
 
@@ -120,7 +135,11 @@ function EventLive({ initial, view }: { initial: TournamentEvent; view: EventVie
         <MatchDetailDialog
           match={selected}
           derived={derived}
+          eventId={event.id}
           onClose={() => setSelectedMatchId(null)}
+          onSaved={(change) =>
+            setPending((current) => [...current.filter((p) => p.matchId !== change.matchId), change])
+          }
         />
       ) : null}
     </div>
