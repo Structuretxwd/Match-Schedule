@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseConfig, parseEvent, SchemaError } from './schema'
+import { parseConfig, parseEvent, summarize, SchemaError } from './schema'
 
 const validEvent = {
   id: 'spring',
@@ -84,5 +84,29 @@ describe('parseConfig', () => {
 
   it('拒绝缺失的 repo 配置', () => {
     expect(() => parseConfig({ admins: [], requiredTokenScopes: scopes })).toThrow(SchemaError)
+  })
+})
+
+describe('summarize', () => {
+  it('统计总场次与已结束场次', () => {
+    const m = validEvent.matches[0]
+    const ev = parseEvent({
+      ...validEvent,
+      matches: [
+        { ...m, id: 'M1', scoreA: 2, scoreB: 1 },
+        { ...m, id: 'M2', scoreA: 0, scoreB: 2 },
+        { ...m, id: 'M3', scoreA: null, scoreB: null },
+        { ...m, id: 'M4', scoreA: 2, scoreB: null },
+      ],
+    })
+    const summary = summarize(ev)
+    // 0 是合法比分（不能因为 0 是假值就当没录），只有两边都非 null 才算已结束
+    expect(summary.totalMatches).toBe(4)
+    expect(summary.finishedMatches).toBe(2)
+    expect(summary.id).toBe('spring')
+    expect(summary.name).toBe('春季赛')
+    expect(summary.bracketSize).toBe(8)
+    expect(summary.status).toBe('ongoing')
+    expect(summary.updatedAt).toBe('2026-09-25T10:00:00+08:00')
   })
 })

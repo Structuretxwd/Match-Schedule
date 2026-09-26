@@ -1,7 +1,7 @@
-import { listEventIds } from '@/lib/data/load'
+import { eventStaticParams } from '@/lib/data/load'
 
 export function generateStaticParams() {
-  return listEventIds().map((id) => ({ id }))
+  return eventStaticParams()
 }
 
 export default function EventLayout({ children }: { children: React.ReactNode }) {

@@ -18,6 +18,19 @@ export function listEventIds(): string[] {
   }
 }
 
+/**
+ * output: 'export' 要求每个动态路由至少产出一个参数；generateStaticParams 返回空数组
+ * 会被 Next 当成「没写这个函数」，直接中断构建。所以仓库里一个赛事都没有时，
+ * 用这个占位 id 让构建通过，该路由会渲染 EventClient 的「数据暂不可用」兜底文案。
+ */
+export const EMPTY_PARAMS_ID = '_empty'
+
+/** 供 app/event/[id] 各动态路由的 generateStaticParams 使用 */
+export function eventStaticParams(): { id: string }[] {
+  const ids = listEventIds()
+  return (ids.length > 0 ? ids : [EMPTY_PARAMS_ID]).map((id) => ({ id }))
+}
+
 export function loadEvent(id: string): TournamentEvent | null {
   const file = path.join(EVENTS_DIR, `${id}.json`)
   try {
