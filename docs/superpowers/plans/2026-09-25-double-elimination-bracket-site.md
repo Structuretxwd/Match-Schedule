@@ -1487,9 +1487,9 @@ describe('完整跑通 4 队', () => {
       makeEvent(4, {
         'WB-R1-M1': [2, 0],
         'WB-R1-M2': [2, 1],
-        'LB-R1-M1': [2, 1],
+        'LB-R1-M1': [1, 2],
         'WB-R2-M1': [2, 0],
-        'LB-R2-M1': [2, 1],
+        'LB-R2-M1': [1, 2],
         GF: [3, 1],
       }),
     )
@@ -1504,9 +1504,9 @@ describe('完整跑通 4 队', () => {
       makeEvent(4, {
         'WB-R1-M1': [2, 0],
         'WB-R1-M2': [2, 1],
-        'LB-R1-M1': [2, 1],
+        'LB-R1-M1': [1, 2],
         'WB-R2-M1': [2, 0],
-        'LB-R2-M1': [2, 1],
+        'LB-R2-M1': [1, 2],
         GF: [1, 3],
       }),
     )
@@ -1870,13 +1870,13 @@ function makeEvent(n: 4 | 8 | 16 | 32): TournamentEvent {
 }
 
 describe('layoutBracket', () => {
-  it.each([4, 8, 16, 32])('%i 队：每场比赛都有坐标', (n) => {
+  it.each([4, 8, 16, 32] as const)('%i 队：每场比赛都有坐标', (n) => {
     const ev = makeEvent(n)
     const layout = layoutBracket(deriveBracket(ev), n)
     expect(layout.cards).toHaveLength(2 * n - 2)
   })
 
-  it.each([4, 8, 16, 32])('%i 队：坐标均为有限非负数', (n) => {
+  it.each([4, 8, 16, 32] as const)('%i 队：坐标均为有限非负数', (n) => {
     const layout = layoutBracket(deriveBracket(makeEvent(n)), n)
     for (const c of layout.cards) {
       expect(Number.isFinite(c.x)).toBe(true)
@@ -1887,7 +1887,7 @@ describe('layoutBracket', () => {
   })
 
   it('同一列内卡片不重叠（纵向间距不小于卡高）', () => {
-    for (const n of [4, 8, 16, 32]) {
+    for (const n of [4, 8, 16, 32] as const) {
       const layout = layoutBracket(deriveBracket(makeEvent(n)), n)
       const byColumn = new Map<number, { y: number }[]>()
       for (const c of layout.cards) {
@@ -1941,8 +1941,8 @@ describe('layoutBracket', () => {
 
   it('连接线数量等于非种子来源数量', () => {
     const layout = layoutBracket(deriveBracket(makeEvent(8)), 8)
-    // 8 队：WB 首轮 8 个种子来源，其余 (7-4)+6+1 = 10 个非种子来源
-    expect(layout.connectors).toHaveLength(10)
+    // 8 队：28 个来源位减去 8 个种子位 = 20
+    expect(layout.connectors).toHaveLength(20)
   })
 
   it('连接线均从左侧指向右侧', () => {
@@ -1968,7 +1968,7 @@ describe('layoutBracket', () => {
   })
 
   it('输出整体宽高能容纳所有卡片', () => {
-    for (const n of [4, 8, 16, 32]) {
+    for (const n of [4, 8, 16, 32] as const) {
       const layout = layoutBracket(deriveBracket(makeEvent(n)), n)
       const right = Math.max(...layout.cards.map((c) => c.x + c.width))
       const bottom = Math.max(...layout.cards.map((c) => c.y + c.height))
@@ -2570,7 +2570,7 @@ export function connectorViews(layout: BracketLayout, derived: DerivedBracket): 
 - [ ] **Step 4：运行测试确认通过**
 
 Run: `npx vitest run lib/view.test.ts`
-Expected: PASS，14 个用例全绿
+Expected: PASS，17 个用例全绿
 
 - [ ] **Step 5：跑一次全量测试确认无回归**
 
@@ -2627,21 +2627,21 @@ export default function HomePage() {
                 className="block rounded-lg border border-line bg-panel p-4 transition-colors hover:border-wb/60 hover:bg-panel-hi"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-base font-medium">{ev.name}</span>
+                  <span className="text-sm font-medium">{ev.name}</span>
                   <span className="shrink-0 rounded border border-line px-2 py-0.5 text-xs text-muted">
                     {STATUS_LABEL[ev.status]}
                   </span>
                 </div>
                 <div className="mt-3 flex items-center justify-between text-xs text-muted">
-                  <span>{ev.bracketSize} 队 · 双败淘汰</span>
+                  <span>{`${ev.bracketSize} 队 · 双败淘汰`}</span>
                   <span className="tabular-nums">
-                    {ev.finishedMatches} / {ev.totalMatches} 场已完成
+                    {`${ev.finishedMatches} / ${ev.totalMatches} 场已完成`}
                   </span>
                 </div>
                 <div className="mt-2 h-1 w-full overflow-hidden rounded bg-line">
                   <div className="h-full bg-wb" style={{ width: `${pct}%` }} />
                 </div>
-                <div className="mt-2 text-xs text-muted">更新于 {formatDateTime(ev.updatedAt)}</div>
+                <div className="mt-2 text-xs text-muted">{`更新于 ${formatDateTime(ev.updatedAt)}`}</div>
               </Link>
             </li>
           )
@@ -3764,7 +3764,8 @@ describe('ScheduleView', () => {
     const d = deriveBracket(makeEvent({ 'WB-R1-M1': [2, 1] }))
     const html = renderToStaticMarkup(<ScheduleView derived={d} onSelectMatch={() => {}} />)
     expect(html).toContain('2 : 1')
-    expect(html).toContain('WB-R1-M1 胜者')
+    // WB-R1-M1 有比分后其胜者已解析进 WB-R2-M1，故该槽位显示队名 T1；WB-R1-M2 未录分，显示来源描述
+    expect(html).toContain('T1 vs WB-R1-M2 胜者')
   })
 
   it('按状态给出不同徽标文案', () => {
@@ -4168,7 +4169,7 @@ Run: `npm run dev`，逐项确认：
 2. 对阵图页：上方绿色带 = 胜者组、下方琥珀色带 = 败者组、最右 = 总决赛；胜者组第 1 轮的 4 张卡片显示 T1–T8；有比分的前两场显示 2:1 与 0:2；跨区连接线为虚线
 3. 点击任意卡片 → 弹出详情，显示双方、比分、BO、时间、裁判、直播、备注与"胜者 → …／败者 → …"
 4. 分别点击"缩小""放大""重置"，百分比随之变化且布局不错位
-5. 切到"赛程"页 → 按日期（10-01、10-02…）分组的列表；切到"队伍"页 → 8 支队伍，状态均为"胜者组存活"
+5. 切到"赛程"页 → 按日期（10-01、10-02…）分组的列表；切到"队伍"页 → 8 支队伍，其中 6 支"胜者组存活"、2 支"败者组存活"（样例数据里 WB-R1-M1 与 WB-R1-M2 已录分，败者望舒与玄鸟已掉入败者组）
 6. 把浏览器窗口缩到手机宽度（或开发者工具切换设备模拟）→ 对阵图可横向滚动、页面不出现横向溢出
 7. 打开开发者工具 Network，等待 30 秒 → 观察到对 `/data/events/spring-2026.json?t=…` 的新请求，页面顶部"已同步 hh:mm"更新
 
@@ -4603,7 +4604,8 @@ describe('verifyLogin', () => {
 })
 
 describe('mutateData', () => {
-  const current = { id: 'spring-2026', matches: [{ id: 'WB-R1-M1', scoreA: null, scoreB: null }] }
+  // scoreA/scoreB 稍后会被 mutate 改成数字，必须显式放宽为 number | null，否则 strict 下只能推断出字面量类型 null
+  const current = { id: 'spring-2026', matches: [{ id: 'WB-R1-M1', scoreA: null as number | null, scoreB: null as number | null }] }
 
   it('读取现有内容、应用变更后携带 sha 提交', async () => {
     const calls = queueFetch([
@@ -5058,7 +5060,7 @@ export async function deleteData(opts: DeleteOptions): Promise<WriteOutcome> {
 - [ ] **Step 4：运行测试确认通过**
 
 Run: `npx vitest run lib/data/github.test.ts`
-Expected: PASS，13 个用例全绿
+Expected: PASS，16 个用例全绿
 
 - [ ] **Step 5：跑一次全量测试确认无回归**
 
@@ -5679,7 +5681,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 - [ ] **Step 9：运行测试确认通过**
 
 Run: `npx vitest run components/auth/auth.test.tsx`
-Expected: PASS，8 个用例全绿
+Expected: PASS，7 个用例全绿
 
 - [ ] **Step 10：类型检查**
 
@@ -5923,6 +5925,7 @@ function ScoreEditor({
         </button>
       </div>
 
+      {/* DerivedMatch 没有 live 字段：live 已被 deriveStatus 折算进 status（与 MatchCard 的判定一致） */}
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -5935,10 +5938,10 @@ function ScoreEditor({
         <button
           type="button"
           disabled={busy}
-          onClick={() => void save({ scoreA: match.scoreA, scoreB: match.scoreB, live: !match.live })}
+          onClick={() => void save({ scoreA: match.scoreA, scoreB: match.scoreB, live: match.status !== 'live' })}
           className="rounded border border-line px-2 py-1 text-[11px] text-muted hover:text-fg disabled:opacity-40"
         >
-          {match.live ? '取消「进行中」' : '标记「进行中」'}
+          {match.status === 'live' ? '取消「进行中」' : '标记「进行中」'}
         </button>
       </div>
 
