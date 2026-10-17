@@ -354,7 +354,7 @@
       "scoreA": null,
       "scoreB": null,
       "live": false,
-      "scheduledAt": null,
+      "scheduledAt": "2026-10-19T12:30:00+08:00",
       "referee": null,
       "streamUrl": null,
       "note": null
@@ -585,5 +585,5 @@
     }
   ],
   "announcements": [],
-  "updatedAt": "2026-10-17T03:53:08.866Z"
+  "updatedAt": "2026-10-17T03:55:03.141Z"
 }
