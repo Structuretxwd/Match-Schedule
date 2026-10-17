@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { winsNeeded, validateScore } from '@/lib/bracket/validate'
 import type { DerivedBracket, DerivedMatch } from '@/lib/bracket/advance'
 import { parseEvent, type TournamentEvent } from '@/lib/data/schema'
-import { BRACKET_COLOR, bracketLabel, formatDateTime, nextStops, slotLabel, statusLabel } from '@/lib/view'
+import { BRACKET_COLOR, bracketLabel, formatDateTime, fromDateTimeInput, nextStops, slotLabel, statusLabel, toDateTimeInput } from '@/lib/view'
 import type { PendingChange } from '@/lib/useEventData'
 import { useAuth } from './auth/AuthProvider'
 
@@ -62,6 +62,7 @@ function ScoreEditor({
   const { isAdmin, mutate } = useAuth()
   const [scoreA, setScoreA] = useState(match.scoreA === null ? '' : String(match.scoreA))
   const [scoreB, setScoreB] = useState(match.scoreB === null ? '' : String(match.scoreB))
+  const [timeDraft, setTimeDraft] = useState(() => toDateTimeInput(match.scheduledAt))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -104,6 +105,41 @@ function ScoreEditor({
         updatedAt: new Date().toISOString(),
       }),
       message: `chore(data): ${eventId} 更新 ${match.id} 比分`,
+    })
+
+    setBusy(false)
+    if (!outcome.ok) {
+      setError(outcome.message)
+      return
+    }
+    onSaved?.({ matchId: match.id, patch })
+    setNotice('已提交，约 1–2 分钟后全网生效。')
+  }
+
+  async function saveTime() {
+    const trimmed = timeDraft.trim()
+    const next = trimmed === '' ? null : fromDateTimeInput(trimmed)
+    // 留空是「清除时间」，非法格式才报错
+    if (trimmed !== '' && next === null) {
+      setError('时间格式不正确，请用日期时间选择器重新选择')
+      return
+    }
+
+    setBusy(true)
+    setError(null)
+    setNotice(null)
+
+    const patch: PendingChange['patch'] = { scheduledAt: next }
+
+    const outcome = await mutate<TournamentEvent>({
+      path: `public/data/events/${eventId}.json`,
+      parse: parseEvent,
+      mutate: (current) => ({
+        ...current,
+        matches: current.matches.map((m) => (m.id === match.id ? { ...m, ...patch } : m)),
+        updatedAt: new Date().toISOString(),
+      }),
+      message: `chore(data): ${eventId} 更新 ${match.id} 开始时间`,
     })
 
     setBusy(false)
@@ -168,6 +204,29 @@ function ScoreEditor({
         >
           {match.status === 'live' ? '取消「进行中」' : '标记「进行中」'}
         </button>
+      </div>
+
+      <div className="space-y-2 border-t border-line pt-3">
+        <h3 className="text-xs font-medium">开始时间</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="datetime-local"
+            aria-label="开始时间"
+            value={timeDraft}
+            disabled={busy}
+            onChange={(e) => setTimeDraft(e.target.value)}
+            className="rounded border border-line bg-base px-2 py-1 text-xs outline-none focus:border-wb"
+          />
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void saveTime()}
+            className="rounded border border-wb px-3 py-1 text-xs text-wb hover:bg-wb/10 disabled:opacity-40"
+          >
+            {busy ? '提交中...' : '保存时间'}
+          </button>
+          <span className="text-[11px] text-muted">{'留空 = 时间待定（按北京时间显示）'}</span>
+        </div>
       </div>
 
       {error ? <p className="text-xs text-danger">{error}</p> : null}

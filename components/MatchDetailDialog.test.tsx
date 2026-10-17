@@ -109,6 +109,7 @@ describe('MatchDetailDialog', () => {
     const html = render('WB-R1-M1')
     expect(html).toContain('只有登录后的管理员可以录入或修改比分')
     expect(html).not.toContain('aria-label="甲队局分"')
+    expect(html).not.toContain('type="datetime-local"')
   })
 
   it('管理员看到录分表单、BO 提示与生效说明', () => {
@@ -118,5 +119,13 @@ describe('MatchDetailDialog', () => {
     expect(html).toContain('BO3 · 先赢 2 局')
     expect(html).toContain('清除比分')
     expect(html).toContain('约 1–2 分钟后')
+  })
+
+  it('管理员可用 datetime-local 改开始时间，当前时间已预填', () => {
+    const html = render('WB-R1-M1', {}, ADMIN_SESSION)
+    expect(html).toContain('type="datetime-local"')
+    expect(html).toContain('value="2026-10-01T14:00"')
+    expect(html).toContain('保存时间')
+    expect(html).toContain('留空 = 时间待定')
   })
 })

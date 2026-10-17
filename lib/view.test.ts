@@ -10,12 +10,14 @@ import {
   bracketLabel,
   connectorViews,
   formatDateTime,
+  fromDateTimeInput,
   groupMatchesByDay,
   laneLabel,
   nextStops,
   slotLabel,
   sortTeams,
   statusLabel,
+  toDateTimeInput,
 } from './view'
 
 function makeEvent(
@@ -73,6 +75,39 @@ describe('formatDateTime', () => {
   it('null 与非法值返回占位文案', () => {
     expect(formatDateTime(null)).toBe('时间待定')
     expect(formatDateTime('不是时间')).toBe('时间待定')
+  })
+})
+
+describe('开始时间编辑', () => {
+  it('存储时间转成 datetime-local 的值，统一按北京时间', () => {
+    expect(toDateTimeInput('2026-10-05T20:00:00+08:00')).toBe('2026-10-05T20:00')
+    expect(toDateTimeInput('2026-10-05T12:00:00Z')).toBe('2026-10-05T20:00')
+  })
+
+  it('无时间或非法值得到空串（对应「时间待定」）', () => {
+    expect(toDateTimeInput(null)).toBe('')
+    expect(toDateTimeInput('不是时间')).toBe('')
+  })
+
+  it('输入值转回带 +08:00 的 ISO', () => {
+    expect(fromDateTimeInput('2026-10-05T20:00')).toBe('2026-10-05T20:00:00+08:00')
+    expect(fromDateTimeInput('2026-10-05T20:00:00')).toBe('2026-10-05T20:00:00+08:00')
+  })
+
+  it('空串表示清除时间', () => {
+    expect(fromDateTimeInput('')).toBeNull()
+  })
+
+  it('非法日期与非法时刻返回 null', () => {
+    expect(fromDateTimeInput('2026-02-31T10:00')).toBeNull()
+    expect(fromDateTimeInput('2026-10-05')).toBeNull()
+    expect(fromDateTimeInput('2026-10-05T25:00')).toBeNull()
+  })
+
+  it('与时区换算自洽：格式化回来等于原墙钟时间', () => {
+    const iso = fromDateTimeInput('2026-10-05T20:00')
+    expect(formatDateTime(iso)).toBe('10-05 20:00')
+    expect(toDateTimeInput(iso)).toBe('2026-10-05T20:00')
   })
 })
 

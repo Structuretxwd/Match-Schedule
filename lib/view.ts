@@ -30,6 +30,32 @@ export function formatDateTime(iso: string | null): string {
   return `${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())} ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`
 }
 
+const DATETIME_INPUT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/
+
+/** 存储的 ISO 时间 → datetime-local 输入框的值（统一按上海墙上时间，避免受浏览器时区影响） */
+export function toDateTimeInput(iso: string | null): string {
+  const d = iso ? shiftToShanghai(iso) : null
+  if (!d) return ''
+  const date = `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`
+  return `${date}T${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`
+}
+
+/** datetime-local 的值 → 带 +08:00 偏移的 ISO；空串代表清除时间，格式非法返回 null */
+export function fromDateTimeInput(value: string): string | null {
+  const trimmed = value.trim()
+  if (trimmed === '') return null
+  const m = DATETIME_INPUT.exec(trimmed)
+  if (!m) return null
+  const [year, month, day, hour, minute] = m.slice(1, 6).map(Number)
+  if (hour > 23 || minute > 59) return null
+  // 借 Date.UTC 的归一化能力反查日期是否真实存在（例如 2 月 31 日会被推到 3 月）
+  const check = new Date(Date.UTC(year, month - 1, day))
+  if (check.getUTCFullYear() !== year || check.getUTCMonth() !== month - 1 || check.getUTCDate() !== day) {
+    return null
+  }
+  return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00+08:00`
+}
+
 const STATUS_LABEL: Record<MatchStatus, string> = {
   pending: '待定',
   ready: '未开始',

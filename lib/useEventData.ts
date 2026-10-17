@@ -9,7 +9,7 @@ export const POLL_INTERVAL_MS = 30_000
 /** 一次尚未随 Actions 重建生效的改动；patch 只描述被改动的字段 */
 export type PendingChange = {
   matchId: string
-  patch: Partial<Pick<StoredMatch, 'scoreA' | 'scoreB' | 'live'>>
+  patch: Partial<Pick<StoredMatch, 'scoreA' | 'scoreB' | 'live' | 'scheduledAt'>>
 }
 
 /** 把尚未生效的改动叠加到服务端数据上 */
@@ -21,7 +21,14 @@ export function applyPending(event: TournamentEvent, pending: PendingChange[]): 
     const patch = byId.get(m.id)
     if (!patch) return m
     const merged: StoredMatch = { ...m, ...patch }
-    if (merged.scoreA === m.scoreA && merged.scoreB === m.scoreB && merged.live === m.live) return m
+    if (
+      merged.scoreA === m.scoreA &&
+      merged.scoreB === m.scoreB &&
+      merged.live === m.live &&
+      merged.scheduledAt === m.scheduledAt
+    ) {
+      return m
+    }
     changed = true
     return merged
   })
