@@ -36,7 +36,7 @@ function makeEvent(scores: Record<string, [number, number]> = {}): TournamentEve
       players: [{ name: `选手${i + 1}` }],
       logo: null,
     })),
-    matches: generateTemplate(n).matches.map((t) => ({
+    matches: generateTemplate(n, 'double-elimination').matches.map((t) => ({
       id: t.id,
       bracket: t.bracket,
       round: t.round,
@@ -99,7 +99,7 @@ describe('MatchDetailDialog', () => {
     expect(html).toContain('败者 → 亚军')
   })
 
-  it('未确定队伍显示来源描述', () => {
+  it('未确定选手显示来源描述', () => {
     const html = render('WB-R2-M1')
     expect(html).toContain('WB-R1-M1 胜者')
     expect(html).toContain('WB-R1-M2 胜者')

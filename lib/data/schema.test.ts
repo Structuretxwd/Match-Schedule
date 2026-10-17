@@ -28,8 +28,25 @@ describe('parseEvent', () => {
     expect(ev.bracketSize).toBe(8)
   })
 
-  it('拒绝非 2 的幂的签表规模', () => {
+  it('双败拒绝非 2 的幂的签表规模', () => {
     expect(() => parseEvent({ ...validEvent, bracketSize: 6 })).toThrow(SchemaError)
+  })
+
+  it('单败接受 4–32 之间的任意整数（含非 2 的幂）', () => {
+    const names = Array.from({ length: 28 }, (_, i) => ({
+      id: `t${i + 1}`, name: `P${i + 1}`, seed: i + 1, players: [], logo: null,
+    }))
+    const ev = parseEvent({
+      ...validEvent,
+      format: 'single-elimination',
+      bracketSize: 28,
+      teams: names,
+    })
+    expect(ev.bracketSize).toBe(28)
+    expect(ev.format).toBe('single-elimination')
+    expect(() => parseEvent({ ...validEvent, format: 'single-elimination', bracketSize: 33 })).toThrow(
+      SchemaError,
+    )
   })
 
   it('拒绝非法赛制', () => {
@@ -105,6 +122,7 @@ describe('summarize', () => {
     expect(summary.finishedMatches).toBe(2)
     expect(summary.id).toBe('spring')
     expect(summary.name).toBe('春季赛')
+    expect(summary.format).toBe('double-elimination')
     expect(summary.bracketSize).toBe(8)
     expect(summary.status).toBe('ongoing')
     expect(summary.updatedAt).toBe('2026-09-25T10:00:00+08:00')

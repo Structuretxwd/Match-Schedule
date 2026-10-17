@@ -23,7 +23,7 @@ function makeEvent(scores: Record<string, [number, number]> = {}): TournamentEve
       players: [{ name: `选手${i + 1}` }],
       logo: null,
     })),
-    matches: generateTemplate(n).matches.map((t) => ({
+    matches: generateTemplate(n, 'double-elimination').matches.map((t) => ({
       id: t.id,
       bracket: t.bracket,
       round: t.round,
@@ -85,7 +85,7 @@ describe('ScheduleView', () => {
 })
 
 describe('TeamsView', () => {
-  it('列出全部队伍并标注存活状态', () => {
+  it('列出全部选手并标注存活状态', () => {
     const ev = makeEvent()
     const html = renderToStaticMarkup(<TeamsView event={ev} derived={deriveBracket(ev)} />)
     expect(html).toContain('T1')
@@ -103,11 +103,20 @@ describe('TeamsView', () => {
     expect((html.match(/已淘汰/g) ?? []).length).toBe(7)
   })
 
-  it('被淘汰的队伍标注淘汰于哪一场', () => {
+  it('被淘汰的选手标注淘汰于哪一场', () => {
     // 输掉胜者组比赛只是掉落败者组；真正被淘汰发生在败者组比赛上
     const ev = makeEvent({ 'WB-R1-M1': [2, 0], 'WB-R1-M2': [2, 0], 'LB-R1-M1': [2, 1] })
     const html = renderToStaticMarkup(<TeamsView event={ev} derived={deriveBracket(ev)} />)
     expect(html).toContain('已淘汰（LB-R1-M1）')
     expect(html).toContain('败者组存活')
+  })
+
+  it('单败：只显示晋级中与已淘汰，没有败者组存活', () => {
+    const ev = { ...makeEvent({ 'WB-R1-M1': [2, 0] }), format: 'single-elimination' as const }
+    ev.matches = ev.matches.filter((m) => m.bracket !== 'LB')
+    const html = renderToStaticMarkup(<TeamsView event={ev} derived={deriveBracket(ev)} />)
+    expect(html).toContain('晋级中')
+    expect(html).toContain('已淘汰')
+    expect(html).not.toContain('败者组存活')
   })
 })

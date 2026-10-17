@@ -27,6 +27,7 @@ const EVENTS: EventSummary[] = [
   {
     id: 'spring-2026',
     name: '2026 春季赛',
+    format: 'double-elimination',
     bracketSize: 8,
     status: 'ongoing',
     finishedMatches: 2,
@@ -48,13 +49,15 @@ function countMatches(html: string, pattern: RegExp): number {
 }
 
 describe('CreateEventForm', () => {
-  it('默认 8 队规模，渲染 8 个队伍名称输入框', () => {
+  it('默认单败 8 人，渲染 8 个选手名称输入框', () => {
     const html = render(<CreateEventForm />)
     expect(html).toContain('创建赛事')
     expect(html).toContain('赛事 ID')
-    expect(html).toContain('签表规模')
+    expect(html).toContain('赛制')
+    expect(html).toContain('参赛人数')
     expect(html).toContain('总决赛 BO')
-    expect(html).toContain('顺序即种子顺序')
+    expect(html).toContain('随机抽签落位')
+    expect(html).toContain('单败淘汰')
     expect(countMatches(html, /name="team-\d+"/g)).toBe(8)
   })
 
@@ -77,10 +80,10 @@ describe('EventList', () => {
     )
     expect(html).toContain('2026 春季赛')
     expect(html).toContain('进行中')
-    expect(html).toContain('8 队')
+    expect(html).toContain('8 人')
     expect(html).toContain('2 / 14 场')
     expect(html).toContain('删除')
-    expect(html).toContain('编辑队伍与公告')
+    expect(html).toContain('编辑选手与公告')
   })
 
   it('未展开确认时不出现二次确认输入框', () => {
@@ -119,6 +122,7 @@ const EVENT: TournamentEvent = {
   ...buildNewEvent({
     id: 'spring-2026',
     name: '2026 春季赛',
+    format: 'double-elimination',
     bracketSize: 4,
     defaultBO: 3,
     grandFinalBO: 5,
@@ -130,7 +134,7 @@ const EVENT: TournamentEvent = {
 }
 
 describe('EventEditPanel', () => {
-  it('注入数据后渲染队伍名称、选手输入框与公告列表', () => {
+  it('注入数据后渲染选手名称、队员输入框与公告列表', () => {
     const html = render(<EventEditPanel eventId="spring-2026" initialEvent={EVENT} />)
     expect(html).toContain('赤霄')
     expect(html).toContain('玄鸟')
@@ -140,7 +144,7 @@ describe('EventEditPanel', () => {
     expect(html).toContain('保存')
   })
 
-  it('队伍名称已填入输入框，而不是留给用户重新输入', () => {
+  it('选手名称已填入输入框，而不是留给用户重新输入', () => {
     const html = render(<EventEditPanel eventId="spring-2026" initialEvent={EVENT} />)
     expect(html).toContain('value="赤霄"')
   })

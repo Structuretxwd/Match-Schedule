@@ -20,7 +20,7 @@ export function TeamsView({ event, derived }: TeamsViewProps) {
   const teams = sortTeams(derived.teamStates)
 
   if (teams.length === 0) {
-    return <p className="text-muted">暂无队伍。</p>
+    return <p className="text-muted">暂无选手。</p>
   }
 
   const champion = derived.championId ? teamById.get(derived.championId) : undefined
@@ -37,8 +37,8 @@ export function TeamsView({ event, derived }: TeamsViewProps) {
           <thead className="bg-panel text-left text-xs text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">种子</th>
-              <th className="px-3 py-2 font-medium">队伍</th>
               <th className="px-3 py-2 font-medium">选手</th>
+              <th className="px-3 py-2 font-medium">队员</th>
               <th className="px-3 py-2 text-right font-medium">胜</th>
               <th className="px-3 py-2 text-right font-medium">负</th>
               <th className="px-3 py-2 font-medium">状态</th>
@@ -49,8 +49,8 @@ export function TeamsView({ event, derived }: TeamsViewProps) {
               const players = teamById.get(t.teamId)?.players ?? []
               const status =
                 t.status === 'eliminated' && t.eliminatedByMatchId
-                  ? `${laneLabel(t.status)}（${t.eliminatedByMatchId}）`
-                  : laneLabel(t.status)
+                  ? `${laneLabel(t.status, event.format)}（${t.eliminatedByMatchId}）`
+                  : laneLabel(t.status, event.format)
               return (
                 <tr key={t.teamId} className="border-t border-line">
                   <td className="px-3 py-2 text-muted">{t.seed}</td>

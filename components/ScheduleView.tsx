@@ -1,7 +1,7 @@
 'use client'
 
 import type { DerivedBracket, DerivedMatch } from '@/lib/bracket/advance'
-import { BRACKET_COLOR, BRACKET_LABEL, formatDateTime, groupMatchesByDay, slotLabel } from '@/lib/view'
+import { BRACKET_COLOR, bracketLabel, formatDateTime, groupMatchesByDay, slotLabel } from '@/lib/view'
 
 export type ScheduleViewProps = {
   derived: DerivedBracket
@@ -48,7 +48,7 @@ export function ScheduleView({ derived, onSelectMatch }: ScheduleViewProps) {
                     className="w-12 shrink-0 text-[11px]"
                     style={{ color: BRACKET_COLOR[m.bracket] }}
                   >
-                    {BRACKET_LABEL[m.bracket]}
+                    {bracketLabel(m.bracket, derived.format)}
                   </span>
                   <span className="flex-1 truncate text-sm">
                     {`${m.teamA?.name ?? slotLabel(m.sourceA)} vs ${m.teamB?.name ?? slotLabel(m.sourceB)}`}

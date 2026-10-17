@@ -35,7 +35,7 @@ export default function HomePage() {
                   </span>
                 </div>
                 <div className="mt-3 flex items-center justify-between text-xs text-muted">
-                  <span>{`${ev.bracketSize} 队 · 双败淘汰`}</span>
+                  <span>{`${ev.bracketSize} 人 · ${ev.format === 'double-elimination' ? '双败淘汰' : '单败淘汰'}`}</span>
                   <span className="tabular-nums">
                     {`${ev.finishedMatches} / ${ev.totalMatches} 场已完成`}
                   </span>

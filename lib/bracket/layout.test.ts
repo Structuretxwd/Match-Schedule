@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { deriveBracket } from './advance'
-import { generateTemplate } from './generate'
+import { generateTemplate, GF_ID } from './generate'
 import { CARD_H, layoutBracket } from './layout'
 import type { TournamentEvent } from '@/lib/data/schema'
 
-function makeEvent(n: 4 | 8 | 16 | 32): TournamentEvent {
+function makeEvent(n: number, format: TournamentEvent['format'] = 'double-elimination'): TournamentEvent {
   return {
     id: 'e',
     name: '测试赛',
-    format: 'double-elimination',
+    format,
     bracketSize: n,
     status: 'ongoing',
     defaultBO: 3,
@@ -20,7 +20,7 @@ function makeEvent(n: 4 | 8 | 16 | 32): TournamentEvent {
       players: [],
       logo: null,
     })),
-    matches: generateTemplate(n).matches.map((t) => ({
+    matches: generateTemplate(n, format).matches.map((t) => ({
       id: t.id,
       bracket: t.bracket,
       round: t.round,
@@ -42,12 +42,12 @@ function makeEvent(n: 4 | 8 | 16 | 32): TournamentEvent {
 describe('layoutBracket', () => {
   it.each([4, 8, 16, 32] as const)('%i 队：每场比赛都有坐标', (n) => {
     const ev = makeEvent(n)
-    const layout = layoutBracket(deriveBracket(ev), n)
+    const layout = layoutBracket(deriveBracket(ev))
     expect(layout.cards).toHaveLength(2 * n - 2)
   })
 
   it.each([4, 8, 16, 32] as const)('%i 队：坐标均为有限非负数', (n) => {
-    const layout = layoutBracket(deriveBracket(makeEvent(n)), n)
+    const layout = layoutBracket(deriveBracket(makeEvent(n)))
     for (const c of layout.cards) {
       expect(Number.isFinite(c.x)).toBe(true)
       expect(Number.isFinite(c.y)).toBe(true)
@@ -58,7 +58,7 @@ describe('layoutBracket', () => {
 
   it('同一列内卡片不重叠（纵向间距不小于卡高）', () => {
     for (const n of [4, 8, 16, 32] as const) {
-      const layout = layoutBracket(deriveBracket(makeEvent(n)), n)
+      const layout = layoutBracket(deriveBracket(makeEvent(n)))
       const byColumn = new Map<number, { y: number }[]>()
       for (const c of layout.cards) {
         const list = byColumn.get(c.x) ?? []
@@ -75,7 +75,7 @@ describe('layoutBracket', () => {
   })
 
   it('胜者组在上、败者组在下', () => {
-    const layout = layoutBracket(deriveBracket(makeEvent(8)), 8)
+    const layout = layoutBracket(deriveBracket(makeEvent(8)))
     const wbBottom = Math.max(
       ...layout.cards.filter((c) => c.matchId.startsWith('WB')).map((c) => c.y + CARD_H),
     )
@@ -86,7 +86,7 @@ describe('layoutBracket', () => {
   })
 
   it('总决赛在最右列', () => {
-    const layout = layoutBracket(deriveBracket(makeEvent(8)), 8)
+    const layout = layoutBracket(deriveBracket(makeEvent(8)))
     const gf = layout.cards.find((c) => c.matchId === 'GF')!
     const maxOther = Math.max(
       ...layout.cards.filter((c) => c.matchId !== 'GF').map((c) => c.x),
@@ -95,14 +95,14 @@ describe('layoutBracket', () => {
   })
 
   it('败者组第一轮与胜者组第二轮对齐', () => {
-    const layout = layoutBracket(deriveBracket(makeEvent(8)), 8)
+    const layout = layoutBracket(deriveBracket(makeEvent(8)))
     const wbR2 = layout.cards.find((c) => c.matchId === 'WB-R2-M1')!
     const lbR1 = layout.cards.find((c) => c.matchId === 'LB-R1-M1')!
     expect(lbR1.x).toBe(wbR2.x)
   })
 
   it('胜者组每轮卡片纵向居中于两个上游之间', () => {
-    const layout = layoutBracket(deriveBracket(makeEvent(8)), 8)
+    const layout = layoutBracket(deriveBracket(makeEvent(8)))
     const a = layout.cards.find((c) => c.matchId === 'WB-R1-M1')!
     const b = layout.cards.find((c) => c.matchId === 'WB-R1-M2')!
     const target = layout.cards.find((c) => c.matchId === 'WB-R2-M1')!
@@ -110,13 +110,13 @@ describe('layoutBracket', () => {
   })
 
   it('连接线数量等于非种子来源数量', () => {
-    const layout = layoutBracket(deriveBracket(makeEvent(8)), 8)
+    const layout = layoutBracket(deriveBracket(makeEvent(8)))
     // 8 队：28 个来源位减去 8 个种子位 = 20
     expect(layout.connectors).toHaveLength(20)
   })
 
   it('连接线均从左侧指向右侧', () => {
-    const layout = layoutBracket(deriveBracket(makeEvent(8)), 8)
+    const layout = layoutBracket(deriveBracket(makeEvent(8)))
     const byId = new Map(layout.cards.map((c) => [c.matchId, c]))
     for (const conn of layout.connectors) {
       const from = byId.get(conn.fromMatchId)!
@@ -126,7 +126,7 @@ describe('layoutBracket', () => {
   })
 
   it('连接线 path 以 M 开头且端点落在卡片边缘', () => {
-    const layout = layoutBracket(deriveBracket(makeEvent(8)), 8)
+    const layout = layoutBracket(deriveBracket(makeEvent(8)))
     const byId = new Map(layout.cards.map((c) => [c.matchId, c]))
     for (const conn of layout.connectors) {
       const from = byId.get(conn.fromMatchId)!
@@ -139,7 +139,7 @@ describe('layoutBracket', () => {
 
   it('输出整体宽高能容纳所有卡片', () => {
     for (const n of [4, 8, 16, 32] as const) {
-      const layout = layoutBracket(deriveBracket(makeEvent(n)), n)
+      const layout = layoutBracket(deriveBracket(makeEvent(n)))
       const right = Math.max(...layout.cards.map((c) => c.x + c.width))
       const bottom = Math.max(...layout.cards.map((c) => c.y + c.height))
       expect(layout.width).toBeGreaterThanOrEqual(right)
@@ -148,16 +148,95 @@ describe('layoutBracket', () => {
   })
 
   it('包含胜者组、败者组、总决赛三段列标题', () => {
-    const layout = layoutBracket(deriveBracket(makeEvent(8)), 8)
+    const layout = layoutBracket(deriveBracket(makeEvent(8)))
     expect(layout.columns.some((c) => c.label.includes('胜者组'))).toBe(true)
     expect(layout.columns.some((c) => c.label.includes('败者组'))).toBe(true)
     expect(layout.columns.some((c) => c.label === '总决赛')).toBe(true)
   })
 
   it('分区标签存在且下标正确', () => {
-    const layout = layoutBracket(deriveBracket(makeEvent(8)), 8)
+    const layout = layoutBracket(deriveBracket(makeEvent(8)))
     expect(layout.sections.map((s) => s.bracket)).toEqual(['WB', 'LB'])
     expect(layout.sections[0].label).toContain('胜者组')
     expect(layout.sections[1].label).toContain('败者组')
+  })
+})
+
+describe('layoutBracket（单败）', () => {
+  it.each([4, 5, 8, 28, 32])('%i 人：每场比赛都有坐标且坐标有限非负', (n) => {
+    const layout = layoutBracket(deriveBracket(makeEvent(n, 'single-elimination')))
+    expect(layout.cards).toHaveLength(n - 1)
+    for (const c of layout.cards) {
+      expect(Number.isFinite(c.x)).toBe(true)
+      expect(Number.isFinite(c.y)).toBe(true)
+      expect(c.x).toBeGreaterThanOrEqual(0)
+      expect(c.y).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('只有一个分区，没有败者组', () => {
+    const layout = layoutBracket(deriveBracket(makeEvent(28, 'single-elimination')))
+    expect(layout.sections.map((s) => s.bracket)).toEqual(['WB'])
+    expect(layout.cards.some((c) => c.matchId.startsWith('LB'))).toBe(false)
+  })
+
+  it('决赛在最右列', () => {
+    const layout = layoutBracket(deriveBracket(makeEvent(28, 'single-elimination')))
+    const gf = layout.cards.find((c) => c.matchId === GF_ID)!
+    const maxOther = Math.max(...layout.cards.filter((c) => c.matchId !== GF_ID).map((c) => c.x))
+    expect(gf.x).toBeGreaterThan(maxOther)
+  })
+
+  it('列标题为第 N 轮 / 半决赛 / 决赛', () => {
+    const layout = layoutBracket(deriveBracket(makeEvent(28, 'single-elimination')))
+    const labels = layout.columns.map((c) => c.label)
+    expect(labels).toContain('第 1 轮')
+    expect(labels).toContain('半决赛')
+    expect(labels).toContain('决赛')
+  })
+
+  it('4 人：一轮淘汰赛 + 决赛，共 3 张卡片', () => {
+    const layout = layoutBracket(deriveBracket(makeEvent(4, 'single-elimination')))
+    expect(layout.cards).toHaveLength(3)
+    expect(layout.columns.map((c) => c.label)).toEqual(['半决赛', '决赛'])
+  })
+
+  it('同一列内卡片不重叠', () => {
+    for (const n of [4, 5, 28, 32]) {
+      const layout = layoutBracket(deriveBracket(makeEvent(n, 'single-elimination')))
+      const byColumn = new Map<number, { y: number }[]>()
+      for (const c of layout.cards) {
+        const list = byColumn.get(c.x) ?? []
+        list.push(c)
+        byColumn.set(c.x, list)
+      }
+      for (const list of byColumn.values()) {
+        const ys = list.map((c) => c.y).sort((a, b) => a - b)
+        for (let i = 1; i < ys.length; i++) {
+          expect(ys[i] - ys[i - 1]).toBeGreaterThanOrEqual(CARD_H)
+        }
+      }
+    }
+  })
+
+  it('连接线均从左侧指向右侧', () => {
+    const layout = layoutBracket(deriveBracket(makeEvent(28, 'single-elimination')))
+    const byId = new Map(layout.cards.map((c) => [c.matchId, c]))
+    for (const conn of layout.connectors) {
+      const from = byId.get(conn.fromMatchId)
+      const to = byId.get(conn.toMatchId)
+      if (!from || !to) continue
+      expect(from.x).toBeLessThan(to.x)
+    }
+  })
+
+  it('输出整体宽高能容纳所有卡片', () => {
+    for (const n of [4, 5, 28, 32]) {
+      const layout = layoutBracket(deriveBracket(makeEvent(n, 'single-elimination')))
+      const right = Math.max(...layout.cards.map((c) => c.x + c.width))
+      const bottom = Math.max(...layout.cards.map((c) => c.y + c.height))
+      expect(layout.width).toBeGreaterThanOrEqual(right)
+      expect(layout.height).toBeGreaterThanOrEqual(bottom)
+    }
   })
 })

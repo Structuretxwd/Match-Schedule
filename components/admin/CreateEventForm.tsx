@@ -2,7 +2,12 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { parseEvent } from '@/lib/data/schema'
+import {
+  MAX_BRACKET_SIZE,
+  MIN_BRACKET_SIZE,
+  parseEvent,
+  type TournamentFormat,
+} from '@/lib/data/schema'
 import {
   buildNewEvent,
   eventFilePath,
@@ -11,8 +16,14 @@ import {
   type NewEventInput,
 } from '@/lib/admin/newEvent'
 
-const SIZES: NewEventInput['bracketSize'][] = [4, 8, 16, 32]
+/** 双败的败者组轮次按 2 的幂推导，规模只能是这几个 */
+const DOUBLE_ELIM_SIZES = [4, 8, 16, 32]
 const BOS = [1, 3, 5, 7]
+
+const FORMATS: { value: TournamentFormat; label: string }[] = [
+  { value: 'single-elimination', label: '单败淘汰（输一场即出局）' },
+  { value: 'double-elimination', label: '双败淘汰（输两场才出局）' },
+]
 
 export type CreateEventFormProps = {
   /** 写入成功后的回调，用于在父组件记录"待生效"提示 */
@@ -23,7 +34,10 @@ export function CreateEventForm({ onCreated }: CreateEventFormProps) {
   const { create } = useAuth()
   const [id, setId] = useState('')
   const [name, setName] = useState('')
-  const [bracketSize, setBracketSize] = useState<NewEventInput['bracketSize']>(8)
+  const [format, setFormat] = useState<TournamentFormat>('single-elimination')
+  const [bracketSize, setBracketSize] = useState(8)
+  /** 人数输入框的原始文本；单败允许任意 4–32，逐字符输入期间不想改名单 */
+  const [sizeDraft, setSizeDraft] = useState('8')
   const [defaultBO, setDefaultBO] = useState(3)
   const [grandFinalBO, setGrandFinalBO] = useState(5)
   const [teamNames, setTeamNames] = useState<string[]>(() => resizeTeamNames([], 8))
@@ -31,9 +45,27 @@ export function CreateEventForm({ onCreated }: CreateEventFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  function changeSize(next: NewEventInput['bracketSize']) {
+  function applySize(next: number) {
     setBracketSize(next)
+    setSizeDraft(String(next))
     setTeamNames((current) => resizeTeamNames(current, next))
+  }
+
+  function changeFormat(next: TournamentFormat) {
+    setFormat(next)
+    // 双败只认 4/8/16/32，当前规模不合规时退回 8
+    if (next === 'double-elimination' && !DOUBLE_ELIM_SIZES.includes(bracketSize)) {
+      applySize(8)
+    }
+  }
+
+  function commitSizeDraft(raw: string) {
+    setSizeDraft(raw)
+    const n = Number(raw)
+    if (Number.isInteger(n) && n >= MIN_BRACKET_SIZE && n <= MAX_BRACKET_SIZE) {
+      setBracketSize(n)
+      setTeamNames((current) => resizeTeamNames(current, n))
+    }
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -43,6 +75,7 @@ export function CreateEventForm({ onCreated }: CreateEventFormProps) {
     const input: NewEventInput = {
       id: id.trim(),
       name: name.trim(),
+      format,
       bracketSize,
       defaultBO,
       grandFinalBO,
@@ -114,17 +147,52 @@ export function CreateEventForm({ onCreated }: CreateEventFormProps) {
         </label>
 
         <label className="block space-y-1 text-xs">
-          <span className="text-muted">签表规模</span>
+          <span className="text-muted">赛制</span>
           <select
-            name="bracket-size"
-            value={bracketSize}
-            onChange={(e) => changeSize(Number(e.target.value) as NewEventInput['bracketSize'])}
+            name="format"
+            value={format}
+            onChange={(e) => changeFormat(e.target.value as TournamentFormat)}
             className="w-full rounded border border-line bg-base px-2 py-1.5 text-sm outline-none focus:border-wb"
           >
-            {SIZES.map((s) => (
-              <option key={s} value={s}>{`${s} 队`}</option>
+            {FORMATS.map((f) => (
+              <option key={f.value} value={f.value}>{f.label}</option>
             ))}
           </select>
+        </label>
+
+        <label className="block space-y-1 text-xs">
+          <span className="text-muted">
+            {format === 'double-elimination' ? '签表规模' : '参赛人数'}
+          </span>
+          {format === 'double-elimination' ? (
+            <select
+              name="bracket-size"
+              value={bracketSize}
+              onChange={(e) => applySize(Number(e.target.value))}
+              className="w-full rounded border border-line bg-base px-2 py-1.5 text-sm outline-none focus:border-wb"
+            >
+              {DOUBLE_ELIM_SIZES.map((s) => (
+                <option key={s} value={s}>{`${s} 人`}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              name="bracket-size"
+              type="number"
+              min={MIN_BRACKET_SIZE}
+              max={MAX_BRACKET_SIZE}
+              value={sizeDraft}
+              placeholder="28"
+              onChange={(e) => commitSizeDraft(e.target.value)}
+              onBlur={(e) => commitSizeDraft(e.target.value)}
+              className="w-full rounded border border-line bg-base px-2 py-1.5 text-sm outline-none focus:border-wb"
+            />
+          )}
+          {format === 'single-elimination' ? (
+            <span className="block text-[11px] text-muted">
+              {`${MIN_BRACKET_SIZE}–${MAX_BRACKET_SIZE} 人，非 2 的幂会产生轮空；签位与轮空归属由创建时的随机抽签决定`}
+            </span>
+          ) : null}
         </label>
 
         <div className="grid grid-cols-2 gap-3">
@@ -160,7 +228,9 @@ export function CreateEventForm({ onCreated }: CreateEventFormProps) {
 
       <fieldset className="space-y-2">
         <legend className="text-xs text-muted">
-          {`队伍名单（顺序即种子顺序，1 号种子在最上；共 ${bracketSize} 支）`}
+          {format === 'single-elimination'
+            ? `选手名单（共 ${bracketSize} 人；创建时随机抽签落位，输入顺序不影响签位）`
+            : `选手名单（顺序即种子顺序，1 号种子在最上；共 ${bracketSize} 人）`}
         </legend>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {teamNames.map((teamName, i) => (

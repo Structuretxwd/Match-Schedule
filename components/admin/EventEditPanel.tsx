@@ -101,9 +101,9 @@ export function EventEditPanel({ eventId, initialEvent, onSaved }: EventEditPane
       {notice ? <p className="text-xs text-wb">{notice}</p> : null}
 
       <section className="space-y-2">
-        <h3 className="text-sm font-medium">{`队伍（${event.teams.length} 支）`}</h3>
+        <h3 className="text-sm font-medium">{`选手（${event.teams.length} 人）`}</h3>
         <p className="text-[11px] text-muted">
-          只改名称与选手名单；种子顺序与签表结构在创建赛事时确定，改动种子需新建赛事。
+          只改名称与队员名单；种子顺序与签表结构在创建赛事时确定，改动种子需新建赛事。
         </p>
         <ul className="space-y-2">
           {event.teams.map((team) => {
@@ -125,7 +125,7 @@ export function EventEditPanel({ eventId, initialEvent, onSaved }: EventEditPane
                   />
                 </label>
                 <label className="block space-y-1 text-[11px]">
-                  <span className="text-muted">选手（顿号或逗号分隔）</span>
+                  <span className="text-muted">队员（顿号或逗号分隔）</span>
                   <input
                     name={`players-${team.id}`}
                     value={draft.players}
@@ -149,7 +149,7 @@ export function EventEditPanel({ eventId, initialEvent, onSaved }: EventEditPane
                         name: draft.name,
                         players: parsePlayers(draft.players),
                       },
-                      `更新队伍「${draft.name.trim() || team.name}」`,
+                      `更新选手「${draft.name.trim() || team.name}」`,
                     )
                   }
                   className="rounded border border-wb px-2 py-1 text-xs text-wb hover:bg-wb/10 disabled:opacity-40"

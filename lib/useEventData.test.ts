@@ -20,7 +20,7 @@ function makeEvent(scores: Record<string, [number, number]> = {}): TournamentEve
       players: [],
       logo: null,
     })),
-    matches: generateTemplate(n).matches.map((t) => ({
+    matches: generateTemplate(n, 'double-elimination').matches.map((t) => ({
       id: t.id,
       bracket: t.bracket,
       round: t.round,

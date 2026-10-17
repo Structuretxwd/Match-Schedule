@@ -25,7 +25,7 @@ function makeEvent(): TournamentEvent {
       players: [],
       logo: null,
     })),
-    matches: generateTemplate(n).matches.map((t) => ({
+    matches: generateTemplate(n, 'double-elimination').matches.map((t) => ({
       id: t.id,
       bracket: t.bracket,
       round: t.round,
@@ -47,7 +47,7 @@ function makeEvent(): TournamentEvent {
 describe('Connectors', () => {
   it('每条连接线渲染一个 path，虚线带 stroke-dasharray', () => {
     const d = deriveBracket(makeEvent())
-    const l = layoutBracket(d, 8)
+    const l = layoutBracket(d)
     const views = connectorViews(l, d)
     const html = renderToStaticMarkup(
       <Connectors connectors={views} width={l.width} height={l.height} />,
@@ -60,7 +60,7 @@ describe('Connectors', () => {
 describe('BracketView', () => {
   const d = deriveBracket(makeEvent())
   const html = renderToStaticMarkup(
-    <BracketView derived={d} bracketSize={8} selectedMatchId="WB-R1-M1" onSelectMatch={() => {}} />,
+    <BracketView derived={d} selectedMatchId="WB-R1-M1" onSelectMatch={() => {}} />,
   )
 
   it('渲染全部 14 场比赛卡片', () => {

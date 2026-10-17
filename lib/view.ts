@@ -1,7 +1,7 @@
 import type { DerivedBracket, DerivedMatch, MatchStatus, TeamLaneStatus, TeamState } from '@/lib/bracket/advance'
 import type { SlotSource } from '@/lib/bracket/generate'
 import type { BracketLayout } from '@/lib/bracket/layout'
-import type { BracketKind } from '@/lib/data/schema'
+import type { BracketKind, TournamentFormat } from '@/lib/data/schema'
 
 // 手动做时区换算，避免依赖运行环境的 ICU 数据导致不同机器输出不一致
 const SHANGHAI_OFFSET_MS = 8 * 60 * 60 * 1000
@@ -47,7 +47,9 @@ const LANE_LABEL: Record<TeamLaneStatus, string> = {
   eliminated: '已淘汰',
 }
 
-export function laneLabel(status: TeamLaneStatus): string {
+export function laneLabel(status: TeamLaneStatus, format: TournamentFormat): string {
+  // 单败没有败者组，只有「还在赛程里」和「已淘汰」两种
+  if (format === 'single-elimination') return status === 'eliminated' ? '已淘汰' : '晋级中'
   return LANE_LABEL[status]
 }
 
@@ -55,6 +57,11 @@ export const BRACKET_LABEL: Record<BracketKind, string> = {
   WB: '胜者组',
   LB: '败者组',
   GF: '总决赛',
+}
+
+export function bracketLabel(kind: BracketKind, format: TournamentFormat): string {
+  if (format === 'single-elimination') return kind === 'GF' ? '决赛' : '淘汰赛'
+  return BRACKET_LABEL[kind]
 }
 
 export const BRACKET_COLOR: Record<BracketKind, string> = {
@@ -124,14 +131,15 @@ export function nextStops(derived: DerivedBracket, matchId: string): NextStop[] 
 export type ConnectorView = { key: string; path: string; dashed: boolean }
 
 export function connectorViews(layout: BracketLayout, derived: DerivedBracket): ConnectorView[] {
+  const singleElim = derived.format === 'single-elimination'
   return layout.connectors.map((c) => {
     const from = derived.byId[c.fromMatchId]?.bracket
     const to = derived.byId[c.toMatchId]?.bracket
     return {
       key: `${c.fromMatchId}->${c.toMatchId}`,
       path: c.path,
-      // 跨分区（胜者组 → 败者组）用虚线，表示"掉落"
-      dashed: from !== to,
+      // 跨分区（胜者组 → 败者组）用虚线，表示"掉落"；单败没有掉落，一律实线
+      dashed: !singleElim && from !== to,
     }
   })
 }

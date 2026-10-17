@@ -22,7 +22,7 @@ function makeEvent(scores: Record<string, [number, number]> = {}): TournamentEve
       players: [],
       logo: null,
     })),
-    matches: generateTemplate(n).matches.map((t) => ({
+    matches: generateTemplate(n, 'double-elimination').matches.map((t) => ({
       id: t.id,
       bracket: t.bracket,
       round: t.round,
@@ -65,7 +65,7 @@ describe('MatchCard', () => {
     expect(html).toContain('text-wb')
   })
 
-  it('队伍未确定时显示来源描述', () => {
+  it('选手未确定时显示来源描述', () => {
     const html = render('WB-R2-M1')
     expect(html).toContain('WB-R1-M1 胜者')
     expect(html).toContain('WB-R1-M2 胜者')

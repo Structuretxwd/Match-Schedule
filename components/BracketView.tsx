@@ -24,7 +24,6 @@ const DRAG_THRESHOLD = 4
 
 export type BracketViewProps = {
   derived: DerivedBracket
-  bracketSize: 4 | 8 | 16 | 32
   selectedMatchId: string | null
   onSelectMatch: (matchId: string) => void
 }
@@ -33,12 +32,12 @@ function clampZoom(z: number): number {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z * 100) / 100))
 }
 
-export function BracketView({ derived, bracketSize, selectedMatchId, onSelectMatch }: BracketViewProps) {
+export function BracketView({ derived, selectedMatchId, onSelectMatch }: BracketViewProps) {
   /** null 表示「适应宽度」，跟随容器宽度自动计算；手动缩放后变成固定倍数 */
   const [manualZoom, setManualZoom] = useState<number | null>(null)
   const [availableWidth, setAvailableWidth] = useState(0)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const layout = useMemo(() => layoutBracket(derived, bracketSize), [derived, bracketSize])
+  const layout = useMemo(() => layoutBracket(derived), [derived])
   const connectors = useMemo(() => connectorViews(layout, derived), [layout, derived])
 
   // 量出可视宽度；窗口缩放时重算，使整张图始终横向铺满而不出滚动条
@@ -146,7 +145,7 @@ export function BracketView({ derived, bracketSize, selectedMatchId, onSelectMat
       <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 rounded-t-lg border-b border-line bg-panel px-3 py-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted">
           <span>实线 = 晋级</span>
-          <span>虚线 = 掉落至败者组</span>
+          {derived.format === 'double-elimination' ? <span>虚线 = 掉落至败者组</span> : null}
           <span>点击卡片查看详情</span>
           {canPan ? <span>按住拖动平移</span> : null}
         </div>

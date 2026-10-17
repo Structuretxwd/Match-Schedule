@@ -21,7 +21,7 @@ export type EventClientProps = {
 const TABS: { view: EventViewKind; label: string; segment: string }[] = [
   { view: 'bracket', label: '对阵图', segment: '' },
   { view: 'schedule', label: '赛程', segment: 'schedule/' },
-  { view: 'teams', label: '队伍', segment: 'teams/' },
+  { view: 'teams', label: '选手', segment: 'teams/' },
 ]
 
 function formatClock(ts: number): string {
@@ -67,7 +67,7 @@ function EventLive({ initial, view }: { initial: TournamentEvent; view: EventVie
           <div>
             <h1 className="text-xl font-semibold tracking-tight">{event.name}</h1>
             <p className="mt-1 text-xs text-muted">
-              {`${event.bracketSize} 队 · 双败淘汰 · ${finished} / ${event.matches.length} 场已完成`}
+              {`${event.bracketSize} 人 · ${event.format === 'double-elimination' ? '双败淘汰' : '单败淘汰'} · ${finished} / ${event.matches.length} 场已完成`}
             </p>
           </div>
           <div className="text-right text-[11px] text-muted">
@@ -121,7 +121,6 @@ function EventLive({ initial, view }: { initial: TournamentEvent; view: EventVie
       {view === 'bracket' ? (
         <BracketView
           derived={derived}
-          bracketSize={event.bracketSize}
           selectedMatchId={selectedMatchId}
           onSelectMatch={setSelectedMatchId}
         />

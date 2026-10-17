@@ -17,7 +17,7 @@ describe('load', () => {
     }
   })
 
-  it('仓库里每个赛事都能解析成功，且队伍数与签表规模一致', () => {
+  it('仓库里每个赛事都能解析成功，且选手数与参赛人数一致', () => {
     for (const id of listEventIds()) {
       const ev = loadEvent(id)
       expect(ev, `赛事 ${id} 解析失败`).not.toBeNull()

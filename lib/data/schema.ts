@@ -1,4 +1,5 @@
 export type BracketKind = 'WB' | 'LB' | 'GF'
+export type TournamentFormat = 'double-elimination' | 'single-elimination'
 export type EventStatus = 'draft' | 'ongoing' | 'finished'
 export type Role = 'admin' | 'referee'
 
@@ -32,8 +33,9 @@ export type Announcement = { id: string; content: string; createdAt: string }
 export type TournamentEvent = {
   id: string
   name: string
-  format: 'double-elimination'
-  bracketSize: 4 | 8 | 16 | 32
+  format: TournamentFormat
+  /** 参赛人数。双败必须为 2 的幂；单败可任意，签位数由内部补齐 */
+  bracketSize: number
   status: EventStatus
   defaultBO: number
   grandFinalBO: number
@@ -46,6 +48,7 @@ export type TournamentEvent = {
 export type EventSummary = {
   id: string
   name: string
+  format: TournamentFormat
   bracketSize: number
   status: EventStatus
   finishedMatches: number
@@ -122,7 +125,11 @@ function oneOf<T extends string>(v: unknown, path: string, allowed: readonly T[]
 }
 
 const VALID_BO = [1, 3, 5, 7] as const
-const VALID_BRACKET_SIZE = [4, 8, 16, 32] as const
+export const VALID_FORMATS = ['double-elimination', 'single-elimination'] as const
+/** 双败的败者组轮次与场次都按 2 的幂推导，因此规模必须严格是 4/8/16/32 */
+const DOUBLE_ELIM_SIZES = [4, 8, 16, 32] as const
+export const MIN_BRACKET_SIZE = 4
+export const MAX_BRACKET_SIZE = 32
 
 function checkBO(v: unknown, path: string): number {
   const n = int(v, path)
@@ -132,8 +139,18 @@ function checkBO(v: unknown, path: string): number {
   return n
 }
 
-export function isBracketSize(v: unknown): v is 4 | 8 | 16 | 32 {
-  return typeof v === 'number' && (VALID_BRACKET_SIZE as readonly number[]).includes(v)
+export function isValidBracketSize(format: TournamentFormat, v: unknown): v is number {
+  if (typeof v !== 'number' || !Number.isInteger(v)) return false
+  if (format === 'double-elimination') {
+    return (DOUBLE_ELIM_SIZES as readonly number[]).includes(v)
+  }
+  return v >= MIN_BRACKET_SIZE && v <= MAX_BRACKET_SIZE
+}
+
+function bracketSizeRule(format: TournamentFormat): string {
+  return format === 'double-elimination'
+    ? '双败的签表规模应为 4/8/16/32 之一'
+    : `单败的参赛人数应为 ${MIN_BRACKET_SIZE}–${MAX_BRACKET_SIZE} 之间的整数`
 }
 
 function parseTeam(v: unknown, path: string): Team {
@@ -178,14 +195,15 @@ function parseAnnouncement(v: unknown, path: string): Announcement {
 
 export function parseEvent(v: unknown): TournamentEvent {
   const o = obj(v, 'event')
+  const format = oneOf(o.format, 'event.format', VALID_FORMATS)
   const bracketSize = int(o.bracketSize, 'event.bracketSize')
-  if (!isBracketSize(bracketSize)) {
-    throw new SchemaError('event.bracketSize', `应为 4/8/16/32 之一，实际为 ${bracketSize}`)
+  if (!isValidBracketSize(format, bracketSize)) {
+    throw new SchemaError('event.bracketSize', `${bracketSizeRule(format)}，实际为 ${bracketSize}`)
   }
   return {
     id: nonEmptyStr(o.id, 'event.id'),
     name: nonEmptyStr(o.name, 'event.name'),
-    format: oneOf(o.format, 'event.format', ['double-elimination'] as const),
+    format,
     bracketSize,
     status: oneOf(o.status, 'event.status', ['draft', 'ongoing', 'finished'] as const),
     defaultBO: checkBO(o.defaultBO, 'event.defaultBO'),
@@ -230,6 +248,7 @@ export function summarize(ev: TournamentEvent): EventSummary {
   return {
     id: ev.id,
     name: ev.name,
+    format: ev.format,
     bracketSize: ev.bracketSize,
     status: ev.status,
     finishedMatches: ev.matches.filter((m) => m.scoreA !== null && m.scoreB !== null).length,

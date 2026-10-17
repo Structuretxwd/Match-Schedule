@@ -58,7 +58,7 @@ export function AdminPage({ events }: { events: EventSummary[] }) {
       ) : null}
 
       <AdminGate
-        fallback={<p className="text-xs text-muted">登录后可创建赛事、维护队伍与发布公告。</p>}
+        fallback={<p className="text-xs text-muted">登录后可创建赛事、维护选手与发布公告。</p>}
       >
         <section className="space-y-2">
           <h2 className="text-sm font-medium">赛事列表</h2>

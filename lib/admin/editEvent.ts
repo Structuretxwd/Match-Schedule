@@ -17,8 +17,8 @@ export function parsePlayers(text: string): string[] {
 export function validateEventEdit(event: TournamentEvent, edit: EventEdit): string | null {
   switch (edit.kind) {
     case 'update-team':
-      if (!event.teams.some((t) => t.id === edit.teamId)) return `队伍 ${edit.teamId} 不存在`
-      if (edit.name.trim().length === 0) return '队伍名称不能为空'
+      if (!event.teams.some((t) => t.id === edit.teamId)) return `选手 ${edit.teamId} 不存在`
+      if (edit.name.trim().length === 0) return '选手名称不能为空'
       return null
     case 'add-announcement':
       if (edit.content.trim().length === 0) return '公告内容不能为空'
@@ -47,7 +47,7 @@ function nextAnnouncementId(event: TournamentEvent, now: string): string {
 export function applyEventEdit(event: TournamentEvent, edit: EventEdit, now: string): TournamentEvent {
   switch (edit.kind) {
     case 'update-team': {
-      if (!event.teams.some((t) => t.id === edit.teamId)) throw new Error(`队伍 ${edit.teamId} 不存在`)
+      if (!event.teams.some((t) => t.id === edit.teamId)) throw new Error(`选手 ${edit.teamId} 不存在`)
       const players = edit.players.map((p) => p.trim()).filter((p) => p.length > 0)
       return {
         ...event,

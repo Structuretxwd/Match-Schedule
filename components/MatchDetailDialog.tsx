@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { winsNeeded, validateScore } from '@/lib/bracket/validate'
 import type { DerivedBracket, DerivedMatch } from '@/lib/bracket/advance'
 import { parseEvent, type TournamentEvent } from '@/lib/data/schema'
-import { BRACKET_COLOR, BRACKET_LABEL, formatDateTime, nextStops, slotLabel, statusLabel } from '@/lib/view'
+import { BRACKET_COLOR, bracketLabel, formatDateTime, nextStops, slotLabel, statusLabel } from '@/lib/view'
 import type { PendingChange } from '@/lib/useEventData'
 import { useAuth } from './auth/AuthProvider'
 
@@ -188,7 +188,7 @@ export function MatchDetailDialog({ match, derived, eventId, onClose, onSaved }:
 
   const winnerTarget = winnerStop ? winnerStop.matchId : isFinal ? '冠军' : '—'
   const loserTarget = loserStop ? loserStop.matchId : isFinal ? '亚军' : '淘汰'
-  const title = `${BRACKET_LABEL[match.bracket]} · 第 ${match.round} 轮 · 第 ${match.index} 场`
+  const title = `${bracketLabel(match.bracket, derived.format)} · 第 ${match.round} 轮 · 第 ${match.index} 场`
 
   return (
     <div

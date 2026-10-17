@@ -1,4 +1,4 @@
-import type { StoredMatch, Team, TournamentEvent } from '@/lib/data/schema'
+import type { StoredMatch, Team, TournamentEvent, TournamentFormat } from '@/lib/data/schema'
 import { GF_ID, generateTemplate, type BracketTemplate, type SlotSource } from './generate'
 
 export type MatchStatus = 'pending' | 'ready' | 'live' | 'finished'
@@ -37,19 +37,22 @@ export type TeamState = {
 }
 
 export type DerivedBracket = {
+  bracketSize: number
+  format: TournamentFormat
   matches: DerivedMatch[]
   byId: Record<string, DerivedMatch>
   teamStates: TeamState[]
   championId: string | null
 }
 
-const templateCache = new Map<number, BracketTemplate>()
+const templateCache = new Map<string, BracketTemplate>()
 
-function templateFor(bracketSize: number): BracketTemplate {
-  let t = templateCache.get(bracketSize)
+function templateFor(format: TournamentFormat, bracketSize: number): BracketTemplate {
+  const key = `${format}:${bracketSize}`
+  let t = templateCache.get(key)
   if (!t) {
-    t = generateTemplate(bracketSize)
-    templateCache.set(bracketSize, t)
+    t = generateTemplate(bracketSize, format)
+    templateCache.set(key, t)
   }
   return t
 }
@@ -94,7 +97,8 @@ function deriveStatus(m: DerivedMatch, live: boolean): MatchStatus {
 }
 
 export function deriveBracket(event: TournamentEvent): DerivedBracket {
-  const template = templateFor(event.bracketSize)
+  const singleElim = event.format === 'single-elimination'
+  const template = templateFor(event.format, event.bracketSize)
   const storedById = new Map(event.matches.map((m) => [m.id, m]))
   const teamBySeed = new Map(event.teams.map((t) => [t.seed, t]))
 
@@ -119,7 +123,7 @@ export function deriveBracket(event: TournamentEvent): DerivedBracket {
       sourceB: tpl.sourceB,
       winnerId: null,
       loserId: null,
-      isElimination: tpl.bracket === 'LB' || tpl.bracket === 'GF',
+      isElimination: singleElim || tpl.bracket === 'LB' || tpl.bracket === 'GF',
       scheduledAt: stored?.scheduledAt ?? null,
       referee: stored?.referee ?? null,
       streamUrl: stored?.streamUrl ?? null,
@@ -135,6 +139,8 @@ export function deriveBracket(event: TournamentEvent): DerivedBracket {
   }
 
   return {
+    bracketSize: event.bracketSize,
+    format: event.format,
     matches: ordered,
     byId,
     teamStates: deriveTeamStates(event, byId),
@@ -146,6 +152,7 @@ function deriveTeamStates(
   event: TournamentEvent,
   byId: Record<string, DerivedMatch>,
 ): TeamState[] {
+  const singleElim = event.format === 'single-elimination'
   const acc = new Map<string, TeamState>()
   for (const t of event.teams) {
     acc.set(t.id, {
@@ -175,7 +182,12 @@ function deriveTeamStates(
   }
 
   for (const s of acc.values()) {
-    s.status = s.losses >= 2 ? 'eliminated' : s.losses === 1 ? 'alive-lb' : 'alive-wb'
+    if (singleElim) {
+      // 单败没有败者组存活这一档：输一场即出局
+      s.status = s.losses >= 1 ? 'eliminated' : 'alive-wb'
+    } else {
+      s.status = s.losses >= 2 ? 'eliminated' : s.losses === 1 ? 'alive-lb' : 'alive-wb'
+    }
   }
 
   // 总决赛败者一律淘汰，即使其此前零败（不采用重置规则）

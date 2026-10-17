@@ -10,6 +10,7 @@ function makeEvent(): TournamentEvent {
     ...buildNewEvent({
       id: 'spring-2026',
       name: '2026 春季赛',
+      format: 'double-elimination',
       bracketSize: 4,
       defaultBO: 3,
       grandFinalBO: 5,
@@ -42,14 +43,14 @@ describe('validateEventEdit', () => {
     expect(validateEventEdit(event, { kind: 'remove-announcement', announcementId: 'a1' })).toBeNull()
   })
 
-  it('队伍名称不能为空', () => {
+  it('选手名称不能为空', () => {
     const event = makeEvent()
     expect(
       validateEventEdit(event, { kind: 'update-team', teamId: 't1', name: '  ', players: [] }),
-    ).toContain('队伍名称')
+    ).toContain('选手名称')
   })
 
-  it('目标队伍必须存在', () => {
+  it('目标选手必须存在', () => {
     const event = makeEvent()
     expect(
       validateEventEdit(event, { kind: 'update-team', teamId: 't9', name: '新队', players: [] }),
@@ -70,7 +71,7 @@ describe('validateEventEdit', () => {
 })
 
 describe('applyEventEdit', () => {
-  it('改队伍名称不影响其他字段与其它队伍', () => {
+  it('改选手名称不影响其他字段与其它选手', () => {
     const next = applyEventEdit(
       makeEvent(),
       { kind: 'update-team', teamId: 't2', name: '沧溟二队', players: [] },
@@ -82,7 +83,7 @@ describe('applyEventEdit', () => {
     expect(next.updatedAt).toBe(NOW)
   })
 
-  it('选手名单被解析为对象数组', () => {
+  it('队员名单被解析为对象数组', () => {
     const next = applyEventEdit(
       makeEvent(),
       { kind: 'update-team', teamId: 't1', name: '赤霄', players: ['甲', '乙'] },

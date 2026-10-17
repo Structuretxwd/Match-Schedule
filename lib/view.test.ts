@@ -7,6 +7,7 @@ import type { TournamentEvent } from './data/schema'
 import {
   BRACKET_COLOR,
   BRACKET_LABEL,
+  bracketLabel,
   connectorViews,
   formatDateTime,
   groupMatchesByDay,
@@ -17,11 +18,15 @@ import {
   statusLabel,
 } from './view'
 
-function makeEvent(n: 4 | 8 | 16 | 32, scores: Record<string, [number, number]> = {}): TournamentEvent {
+function makeEvent(
+  n: number,
+  scores: Record<string, [number, number]> = {},
+  format: TournamentEvent['format'] = 'double-elimination',
+): TournamentEvent {
   return {
     id: 'e',
     name: '测试赛',
-    format: 'double-elimination',
+    format,
     bracketSize: n,
     status: 'ongoing',
     defaultBO: 3,
@@ -33,7 +38,7 @@ function makeEvent(n: 4 | 8 | 16 | 32, scores: Record<string, [number, number]> 
       players: [],
       logo: null,
     })),
-    matches: generateTemplate(n).matches.map((t) => ({
+    matches: generateTemplate(n, format).matches.map((t) => ({
       id: t.id,
       bracket: t.bracket,
       round: t.round,
@@ -80,9 +85,22 @@ describe('文案映射', () => {
   })
 
   it('队伍状态', () => {
-    expect(laneLabel('alive-wb')).toBe('胜者组存活')
-    expect(laneLabel('alive-lb')).toBe('败者组存活')
-    expect(laneLabel('eliminated')).toBe('已淘汰')
+    expect(laneLabel('alive-wb', 'double-elimination')).toBe('胜者组存活')
+    expect(laneLabel('alive-lb', 'double-elimination')).toBe('败者组存活')
+    expect(laneLabel('eliminated', 'double-elimination')).toBe('已淘汰')
+  })
+
+  it('单败只有晋级中与已淘汰两种状态', () => {
+    expect(laneLabel('alive-wb', 'single-elimination')).toBe('晋级中')
+    expect(laneLabel('alive-lb', 'single-elimination')).toBe('晋级中')
+    expect(laneLabel('eliminated', 'single-elimination')).toBe('已淘汰')
+  })
+
+  it('分区文案随赛制变化', () => {
+    expect(bracketLabel('WB', 'double-elimination')).toBe('胜者组')
+    expect(bracketLabel('GF', 'double-elimination')).toBe('总决赛')
+    expect(bracketLabel('WB', 'single-elimination')).toBe('淘汰赛')
+    expect(bracketLabel('GF', 'single-elimination')).toBe('决赛')
   })
 
   it('三种分区都有文案与六位十六进制颜色', () => {
@@ -159,23 +177,30 @@ describe('nextStops', () => {
 describe('connectorViews', () => {
   it('8 队共 20 条连接线（28 个来源位减去 8 个种子位）', () => {
     const d = deriveBracket(makeEvent(8))
-    expect(connectorViews(layoutBracket(d, 8), d)).toHaveLength(20)
+    expect(connectorViews(layoutBracket(d), d)).toHaveLength(20)
   })
 
   it('同时存在跨区虚线（掉落）与同区实线（晋级）', () => {
     const d = deriveBracket(makeEvent(8))
-    const views = connectorViews(layoutBracket(d, 8), d)
+    const views = connectorViews(layoutBracket(d), d)
     expect(views.some((v) => v.dashed)).toBe(true)
     expect(views.some((v) => !v.dashed)).toBe(true)
   })
 
   it('每条线都有从 M 起始的 path 与包含 -> 的 key', () => {
     const d = deriveBracket(makeEvent(4))
-    const views = connectorViews(layoutBracket(d, 4), d)
+    const views = connectorViews(layoutBracket(d), d)
     expect(views).toHaveLength(8)
     for (const v of views) {
       expect(v.path.startsWith('M ')).toBe(true)
       expect(v.key).toContain('->')
     }
+  })
+
+  it('单败没有掉落关系，连接线一律实线', () => {
+    const d = deriveBracket(makeEvent(28, {}, 'single-elimination'))
+    const views = connectorViews(layoutBracket(d), d)
+    expect(views.length).toBeGreaterThan(0)
+    expect(views.every((v) => !v.dashed)).toBe(true)
   })
 })

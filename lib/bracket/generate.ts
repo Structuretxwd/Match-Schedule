@@ -1,4 +1,4 @@
-import type { BracketKind } from '@/lib/data/schema'
+import type { BracketKind, TournamentFormat } from '@/lib/data/schema'
 
 export type SlotSource =
   | { kind: 'seed'; seed: number }
@@ -22,12 +22,24 @@ export type BracketTemplate = {
 
 export const GF_ID = 'GF'
 
+/** 单败要把人数补齐到下一个 2 的幂；人数本身就是 2 的幂时等于人数 */
+export function slotsFor(bracketSize: number): number {
+  let slots = 1
+  while (slots < bracketSize) slots *= 2
+  return slots
+}
+
 export function wbRoundCount(bracketSize: number): number {
   return Math.log2(bracketSize)
 }
 
 export function lbRoundCount(bracketSize: number): number {
   return 2 * Math.log2(bracketSize) - 2
+}
+
+/** 单败的总轮数（含决赛），由补签后的签位数决定 */
+export function seRoundCount(bracketSize: number): number {
+  return Math.log2(slotsFor(bracketSize))
 }
 
 export function wbMatchId(round: number, index: number): string {
@@ -63,7 +75,13 @@ export function lbMatchCount(bracketSize: number, round: number): number {
   return count
 }
 
-export function generateTemplate(bracketSize: number): BracketTemplate {
+export function generateTemplate(bracketSize: number, format: TournamentFormat): BracketTemplate {
+  return format === 'single-elimination'
+    ? generateSingleElim(bracketSize)
+    : generateDoubleElim(bracketSize)
+}
+
+export function generateDoubleElim(bracketSize: number): BracketTemplate {
   const k = wbRoundCount(bracketSize)
   const lbRounds = lbRoundCount(bracketSize)
   const matches: MatchTemplate[] = []
@@ -116,4 +134,72 @@ export function generateTemplate(bracketSize: number): BracketTemplate {
   })
 
   return { bracketSize, rounds: { wb: k, lb: lbRounds }, matches }
+}
+
+/**
+ * 单败：把人数补齐到下一个 2 的幂，多出来的签位由高种子首轮轮空。
+ * 轮空不产生比赛——该种子直接落位到下一轮的对应签位，所以场次数恒为 n-1。
+ * 最后一轮是决赛，标记为 GF，与双败的总决赛共用同一条渲染路径。
+ */
+export function generateSingleElim(bracketSize: number): BracketTemplate {
+  const slots = slotsFor(bracketSize)
+  /** 总轮数含决赛；决赛单独成场，所以胜者组只有前面这些轮 */
+  const wbRounds = seRoundCount(bracketSize) - 1
+  const order = seedOrder(slots)
+  const matches: MatchTemplate[] = []
+
+  // 第 1 轮：签位两两配对。两个签位都有人才是真打；
+  // 只有一个签位有人，说明另一方是空签，该种子轮空，直接进入下一轮。
+  const byeAt = new Map<number, SlotSource>()
+  for (let index = 1; index <= slots / 2; index++) {
+    const seedA = order[(index - 1) * 2]
+    const seedB = order[(index - 1) * 2 + 1]
+    const hasA = seedA <= bracketSize
+    const hasB = seedB <= bracketSize
+    if (hasA && hasB) {
+      matches.push({
+        id: wbMatchId(1, index),
+        bracket: 'WB',
+        round: 1,
+        index,
+        sourceA: { kind: 'seed', seed: seedA },
+        sourceB: { kind: 'seed', seed: seedB },
+      })
+    } else {
+      // 空签只会有一侧，两侧都空意味着签位数还没补够
+      byeAt.set(index, { kind: 'seed', seed: hasA ? seedA : seedB })
+    }
+  }
+
+  /** 第 round 轮第 index 个签位晋级出来的来源：轮空的种子直接落位，其余取该场胜者 */
+  const advanceFrom = (round: number, index: number): SlotSource =>
+    (round === 1 ? byeAt.get(index) : undefined) ?? {
+      kind: 'winner',
+      matchId: wbMatchId(round, index),
+    }
+
+  for (let round = 2; round <= wbRounds; round++) {
+    for (let index = 1; index <= slots / 2 ** round; index++) {
+      matches.push({
+        id: wbMatchId(round, index),
+        bracket: 'WB',
+        round,
+        index,
+        sourceA: advanceFrom(round - 1, index * 2 - 1),
+        sourceB: advanceFrom(round - 1, index * 2),
+      })
+    }
+  }
+
+  // 决赛（单场决胜）。4 人时胜者组只有一轮，那里的轮空同样要在决赛侧生效。
+  matches.push({
+    id: GF_ID,
+    bracket: 'GF',
+    round: 1,
+    index: 1,
+    sourceA: advanceFrom(wbRounds, 1),
+    sourceB: advanceFrom(wbRounds, 2),
+  })
+
+  return { bracketSize, rounds: { wb: wbRounds, lb: 0 }, matches }
 }

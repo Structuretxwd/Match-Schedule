@@ -23,7 +23,7 @@ function makeEvent(n: 4 | 8 | 16 | 32, scores: Record<string, [number, number]> 
     defaultBO: 3,
     grandFinalBO: 5,
     teams: makeTeams(n),
-    matches: generateTemplate(n).matches.map((t) => {
+    matches: generateTemplate(n, 'double-elimination').matches.map((t) => {
       const s = scores[t.id]
       return {
         id: t.id,
@@ -167,11 +167,11 @@ describe('完整跑通 8 队', () => {
   it('共 14 场、冠军唯一、7 支队伍被淘汰', () => {
     const scores: Record<string, [number, number]> = {}
     // 高种子全胜：WB 每场 A 胜
-    for (const t of generateTemplate(8).matches) {
+    for (const t of generateTemplate(8, 'double-elimination').matches) {
       if (t.bracket === 'WB') scores[t.id] = [2, 0]
     }
     // 败者组：一律 A 胜，保证流程走完
-    for (const t of generateTemplate(8).matches) {
+    for (const t of generateTemplate(8, 'double-elimination').matches) {
       if (t.bracket === 'LB') scores[t.id] = [2, 0]
     }
     scores['GF'] = [3, 0]
@@ -241,5 +241,81 @@ describe('缺省合并', () => {
     const b = deriveBracket(makeEvent(8))
     expect(b.byId['GF'].bo).toBe(5)
     expect(b.byId['WB-R1-M1'].bo).toBe(3)
+  })
+})
+
+function makeSeEvent(n: number, scores: Record<string, [number, number]> = {}): TournamentEvent {
+  return {
+    id: 'se',
+    name: '单败测试赛',
+    format: 'single-elimination',
+    bracketSize: n,
+    status: 'ongoing',
+    defaultBO: 3,
+    grandFinalBO: 5,
+    teams: makeTeams(n),
+    matches: generateTemplate(n, 'single-elimination').matches.map((t) => {
+      const s = scores[t.id]
+      return {
+        id: t.id,
+        bracket: t.bracket,
+        round: t.round,
+        index: t.index,
+        bo: t.bracket === 'GF' ? 5 : 3,
+        scoreA: s ? s[0] : null,
+        scoreB: s ? s[1] : null,
+        live: false,
+        scheduledAt: null,
+        referee: null,
+        streamUrl: null,
+        note: null,
+      } satisfies StoredMatch
+    }),
+    announcements: [],
+    updatedAt: '2026-09-25T10:00:00+08:00',
+  }
+}
+
+describe('单败淘汰', () => {
+  it('28 人：27 场比赛、没有败者组场次', () => {
+    const b = deriveBracket(makeSeEvent(28))
+    expect(b.matches).toHaveLength(27)
+    expect(b.matches.some((m) => m.bracket === 'LB')).toBe(false)
+    expect(b.format).toBe('single-elimination')
+  })
+
+  it('28 人：种子 1–4 轮空后直接出现在第二轮', () => {
+    const b = deriveBracket(makeSeEvent(28))
+    const r2Seeds = [
+      b.byId['WB-R2-M1'].teamA,
+      b.byId['WB-R2-M3'].teamA,
+      b.byId['WB-R2-M5'].teamA,
+      b.byId['WB-R2-M7'].teamA,
+    ].map((t) => t?.seed)
+    expect(r2Seeds.sort((a, b2) => (a ?? 0) - (b2 ?? 0))).toEqual([1, 2, 3, 4])
+  })
+
+  it('输一场即被淘汰（不再有败者组存活这一档）', () => {
+    const b = deriveBracket(makeSeEvent(4, { 'WB-R1-M1': [2, 0] }))
+    const loser = b.teamStates.find((s) => s.teamId === 't4')!
+    expect(loser.losses).toBe(1)
+    expect(loser.status).toBe('eliminated')
+    expect(b.teamStates.find((s) => s.teamId === 't1')!.status).toBe('alive-wb')
+  })
+
+  it('4 人跑完全程：冠军唯一、恰有 3 人被淘汰', () => {
+    const b = deriveBracket(makeSeEvent(4, { 'WB-R1-M1': [2, 0], 'WB-R1-M2': [2, 1], GF: [2, 1] }))
+    expect(b.championId).toBe('t1')
+    expect(b.teamStates.filter((s) => s.status === 'eliminated')).toHaveLength(3)
+    expect(b.byId['GF'].teamA!.seed).toBe(1)
+    expect(b.byId['GF'].teamB!.seed).toBe(2)
+  })
+
+  it('改回未确认结果后下游回到 pending', () => {
+    const b = deriveBracket(makeSeEvent(4))
+    expect(b.byId['GF'].teamA).toBeNull()
+    expect(b.byId['GF'].status).toBe('pending')
+    const b2 = deriveBracket(makeSeEvent(4, { 'WB-R1-M1': [2, 0] }))
+    expect(b2.byId['GF'].teamA!.seed).toBe(1)
   })
 })

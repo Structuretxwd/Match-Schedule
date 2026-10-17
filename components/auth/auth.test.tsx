@@ -24,6 +24,7 @@ const EVENTS: EventSummary[] = [
   {
     id: 'spring-2026',
     name: '2026 春季赛',
+    format: 'double-elimination',
     bracketSize: 8,
     status: 'ongoing',
     finishedMatches: 2,

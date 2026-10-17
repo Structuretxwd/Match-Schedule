@@ -60,7 +60,7 @@ export function EventList({ events, selectedId, onSelect, onDeleted }: EventList
                 <Link href={`/event/${event.id}/`} className="hover:text-wb">
                   {event.name}
                 </Link>
-                <span className="text-[11px] text-muted">{`${STATUS_LABEL[event.status]} · ${event.bracketSize} 队`}</span>
+                <span className="text-[11px] text-muted">{`${STATUS_LABEL[event.status]} · ${event.bracketSize} 人 · ${event.format === 'double-elimination' ? '双败' : '单败'}`}</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-muted">{`${event.finishedMatches} / ${event.totalMatches} 场`}</span>
@@ -84,7 +84,7 @@ export function EventList({ events, selectedId, onSelect, onDeleted }: EventList
                       : 'border-line text-muted hover:text-fg'
                   }`}
                 >
-                  {selectedId === event.id ? '正在编辑' : '编辑队伍与公告'}
+                  {selectedId === event.id ? '正在编辑' : '编辑选手与公告'}
                 </button>
               </div>
             </div>
