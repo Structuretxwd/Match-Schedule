@@ -4,6 +4,7 @@ import { AuthProvider } from '@/components/auth/AuthProvider'
 import { deriveBracket } from '@/lib/bracket/advance'
 import { generateTemplate } from '@/lib/bracket/generate'
 import type { AppConfig, TournamentEvent } from '@/lib/data/schema'
+import type { PendingChange } from '@/lib/useEventData'
 import { MatchDetailDialog } from './MatchDetailDialog'
 
 const CONFIG: AppConfig = {
@@ -55,11 +56,22 @@ function makeEvent(scores: Record<string, [number, number]> = {}): TournamentEve
   }
 }
 
-function render(matchId: string, scores = {}, session: typeof ADMIN_SESSION | null = null) {
+function render(
+  matchId: string,
+  scores = {},
+  session: typeof ADMIN_SESSION | null = null,
+  staged?: PendingChange['patch'],
+) {
   const d = deriveBracket(makeEvent(scores))
   return renderToStaticMarkup(
     <AuthProvider config={CONFIG} initialSession={session}>
-      <MatchDetailDialog match={d.byId[matchId]} derived={d} eventId="spring-2026" onClose={() => {}} />
+      <MatchDetailDialog
+        match={d.byId[matchId]}
+        derived={d}
+        onClose={() => {}}
+        onStage={() => {}}
+        staged={staged}
+      />
     </AuthProvider>,
   )
 }
@@ -112,20 +124,32 @@ describe('MatchDetailDialog', () => {
     expect(html).not.toContain('type="datetime-local"')
   })
 
-  it('管理员看到录分表单、BO 提示与生效说明', () => {
+  it('管理员看到录分表单、BO 提示与暂存说明', () => {
     const html = render('WB-R1-M1', {}, ADMIN_SESSION)
     expect(html).toContain('aria-label="甲队局分"')
     expect(html).toContain('aria-label="乙队局分"')
     expect(html).toContain('BO3 · 先赢 2 局')
     expect(html).toContain('清除比分')
-    expect(html).toContain('约 1–2 分钟后')
+    expect(html).toContain('点页面上的「全部提交」')
   })
 
   it('管理员可用 datetime-local 改开始时间，当前时间已预填', () => {
     const html = render('WB-R1-M1', {}, ADMIN_SESSION)
     expect(html).toContain('type="datetime-local"')
     expect(html).toContain('value="2026-10-01T14:00"')
-    expect(html).toContain('保存时间')
+    expect(html).toContain('暂存时间')
     expect(html).toContain('留空 = 时间待定')
+  })
+
+  it('录分与时间的按钮都是暂存，不会直接提交', () => {
+    const html = render('WB-R1-M1', {}, ADMIN_SESSION)
+    expect(html).not.toContain('提交中...')
+    expect(html).toContain('>暂存<')
+    expect(html).not.toContain('本场已有暂存改动')
+  })
+
+  it('本场已有暂存改动时给出提示', () => {
+    const html = render('WB-R1-M1', {}, ADMIN_SESSION, { scoreA: 2 })
+    expect(html).toContain('本场已有暂存改动')
   })
 })

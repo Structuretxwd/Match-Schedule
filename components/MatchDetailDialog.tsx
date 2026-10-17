@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { winsNeeded, validateScore } from '@/lib/bracket/validate'
 import type { DerivedBracket, DerivedMatch } from '@/lib/bracket/advance'
-import { parseEvent, type TournamentEvent } from '@/lib/data/schema'
 import { BRACKET_COLOR, bracketLabel, formatDateTime, fromDateTimeInput, nextStops, slotLabel, statusLabel, toDateTimeInput } from '@/lib/view'
 import type { PendingChange } from '@/lib/useEventData'
 import { useAuth } from './auth/AuthProvider'
@@ -11,10 +10,11 @@ import { useAuth } from './auth/AuthProvider'
 export type MatchDetailDialogProps = {
   match: DerivedMatch
   derived: DerivedBracket
-  eventId: string
   onClose: () => void
-  /** 提交成功后把待生效改动交给上层做乐观更新 */
-  onSaved?: (change: PendingChange) => void
+  /** 把改动放进本地暂存；不写仓库，等页面上的「全部提交」统一提交 */
+  onStage: (matchId: string, patch: PendingChange['patch']) => void
+  /** 该场比赛已有的暂存内容，用于提示 */
+  staged?: PendingChange['patch']
 }
 
 function ScoreRow({
@@ -52,20 +52,18 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function ScoreEditor({
   match,
-  eventId,
-  onSaved,
+  staged,
+  onStage,
 }: {
   match: DerivedMatch
-  eventId: string
-  onSaved?: (change: PendingChange) => void
+  staged?: PendingChange['patch']
+  onStage: (matchId: string, patch: PendingChange['patch']) => void
 }) {
-  const { isAdmin, mutate } = useAuth()
+  const { isAdmin } = useAuth()
   const [scoreA, setScoreA] = useState(match.scoreA === null ? '' : String(match.scoreA))
   const [scoreB, setScoreB] = useState(match.scoreB === null ? '' : String(match.scoreB))
   const [timeDraft, setTimeDraft] = useState(() => toDateTimeInput(match.scheduledAt))
-  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
 
   if (!isAdmin) {
     return (
@@ -80,43 +78,17 @@ function ScoreEditor({
     return trimmed === '' ? null : Number(trimmed)
   }
 
-  async function save(next: { scoreA: number | null; scoreB: number | null; live: boolean }) {
+  function stageScore(next: { scoreA: number | null; scoreB: number | null; live: boolean }) {
     const check = validateScore(match.bo, next.scoreA, next.scoreB)
     if (!check.ok) {
       setError(check.message)
       return
     }
-    setBusy(true)
     setError(null)
-    setNotice(null)
-
-    const patch: PendingChange['patch'] = {
-      scoreA: next.scoreA,
-      scoreB: next.scoreB,
-      live: next.live,
-    }
-
-    const outcome = await mutate<TournamentEvent>({
-      path: `public/data/events/${eventId}.json`,
-      parse: parseEvent,
-      mutate: (current) => ({
-        ...current,
-        matches: current.matches.map((m) => (m.id === match.id ? { ...m, ...patch } : m)),
-        updatedAt: new Date().toISOString(),
-      }),
-      message: `chore(data): ${eventId} 更新 ${match.id} 比分`,
-    })
-
-    setBusy(false)
-    if (!outcome.ok) {
-      setError(outcome.message)
-      return
-    }
-    onSaved?.({ matchId: match.id, patch })
-    setNotice('已提交，约 1–2 分钟后全网生效。')
+    onStage(match.id, { scoreA: next.scoreA, scoreB: next.scoreB, live: next.live })
   }
 
-  async function saveTime() {
+  function stageTime() {
     const trimmed = timeDraft.trim()
     const next = trimmed === '' ? null : fromDateTimeInput(trimmed)
     // 留空是「清除时间」，非法格式才报错
@@ -124,31 +96,8 @@ function ScoreEditor({
       setError('时间格式不正确，请用日期时间选择器重新选择')
       return
     }
-
-    setBusy(true)
     setError(null)
-    setNotice(null)
-
-    const patch: PendingChange['patch'] = { scheduledAt: next }
-
-    const outcome = await mutate<TournamentEvent>({
-      path: `public/data/events/${eventId}.json`,
-      parse: parseEvent,
-      mutate: (current) => ({
-        ...current,
-        matches: current.matches.map((m) => (m.id === match.id ? { ...m, ...patch } : m)),
-        updatedAt: new Date().toISOString(),
-      }),
-      message: `chore(data): ${eventId} 更新 ${match.id} 开始时间`,
-    })
-
-    setBusy(false)
-    if (!outcome.ok) {
-      setError(outcome.message)
-      return
-    }
-    onSaved?.({ matchId: match.id, patch })
-    setNotice('已提交，约 1–2 分钟后全网生效。')
+    onStage(match.id, { scheduledAt: next })
   }
 
   return (
@@ -163,7 +112,6 @@ function ScoreEditor({
           aria-label="甲队局分"
           inputMode="numeric"
           value={scoreA}
-          disabled={busy}
           onChange={(e) => setScoreA(e.target.value)}
           className="w-14 rounded border border-line bg-base px-2 py-1 text-center text-sm tabular-nums outline-none focus:border-wb"
         />
@@ -172,17 +120,15 @@ function ScoreEditor({
           aria-label="乙队局分"
           inputMode="numeric"
           value={scoreB}
-          disabled={busy}
           onChange={(e) => setScoreB(e.target.value)}
           className="w-14 rounded border border-line bg-base px-2 py-1 text-center text-sm tabular-nums outline-none focus:border-wb"
         />
         <button
           type="button"
-          disabled={busy}
-          onClick={() => void save({ scoreA: toScore(scoreA), scoreB: toScore(scoreB), live: false })}
-          className="ml-auto rounded border border-wb px-3 py-1 text-xs text-wb hover:bg-wb/10 disabled:opacity-40"
+          onClick={() => stageScore({ scoreA: toScore(scoreA), scoreB: toScore(scoreB), live: false })}
+          className="ml-auto rounded border border-wb px-3 py-1 text-xs text-wb hover:bg-wb/10"
         >
-          {busy ? '提交中...' : '提交'}
+          暂存
         </button>
       </div>
 
@@ -190,17 +136,21 @@ function ScoreEditor({
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          disabled={busy}
-          onClick={() => void save({ scoreA: null, scoreB: null, live: false })}
-          className="rounded border border-line px-2 py-1 text-[11px] text-muted hover:text-fg disabled:opacity-40"
+          onClick={() => stageScore({ scoreA: null, scoreB: null, live: false })}
+          className="rounded border border-line px-2 py-1 text-[11px] text-muted hover:text-fg"
         >
           清除比分
         </button>
         <button
           type="button"
-          disabled={busy}
-          onClick={() => void save({ scoreA: match.scoreA, scoreB: match.scoreB, live: match.status !== 'live' })}
-          className="rounded border border-line px-2 py-1 text-[11px] text-muted hover:text-fg disabled:opacity-40"
+          onClick={() =>
+            stageScore({
+              scoreA: match.scoreA,
+              scoreB: match.scoreB,
+              live: match.status !== 'live',
+            })
+          }
+          className="rounded border border-line px-2 py-1 text-[11px] text-muted hover:text-fg"
         >
           {match.status === 'live' ? '取消「进行中」' : '标记「进行中」'}
         </button>
@@ -213,32 +163,32 @@ function ScoreEditor({
             type="datetime-local"
             aria-label="开始时间"
             value={timeDraft}
-            disabled={busy}
             onChange={(e) => setTimeDraft(e.target.value)}
             className="rounded border border-line bg-base px-2 py-1 text-xs outline-none focus:border-wb"
           />
           <button
             type="button"
-            disabled={busy}
-            onClick={() => void saveTime()}
-            className="rounded border border-wb px-3 py-1 text-xs text-wb hover:bg-wb/10 disabled:opacity-40"
+            onClick={stageTime}
+            className="rounded border border-wb px-3 py-1 text-xs text-wb hover:bg-wb/10"
           >
-            {busy ? '提交中...' : '保存时间'}
+            暂存时间
           </button>
           <span className="text-[11px] text-muted">{'留空 = 时间待定（按北京时间显示）'}</span>
         </div>
       </div>
 
+      {staged ? (
+        <p className="text-[11px] text-wb">{'本场已有暂存改动，点页面上的「全部提交」后统一写入。'}</p>
+      ) : null}
       {error ? <p className="text-xs text-danger">{error}</p> : null}
-      {notice ? <p className="text-xs text-wb">{notice}</p> : null}
       <p className="text-[11px] leading-relaxed text-muted">
-        提交会直接写入 GitHub 仓库中的数据文件，随后由 Actions 重建站点，约 1–2 分钟后对所有人生效。
+        {'改动先存在本地草稿里并立即预览，点页面上的「全部提交」会合成一次写入 GitHub 仓库，等 Actions 重建后对所有人生效。'}
       </p>
     </div>
   )
 }
 
-export function MatchDetailDialog({ match, derived, eventId, onClose, onSaved }: MatchDetailDialogProps) {
+export function MatchDetailDialog({ match, derived, onClose, onStage, staged }: MatchDetailDialogProps) {
   const stops = nextStops(derived, match.id)
   const winnerStop = stops.find((s) => s.kind === 'winner')
   const loserStop = stops.find((s) => s.kind === 'loser')
@@ -324,7 +274,7 @@ export function MatchDetailDialog({ match, derived, eventId, onClose, onSaved }:
         </div>
 
         <footer className="border-t border-line px-4 py-3">
-          <ScoreEditor match={match} eventId={eventId} onSaved={onSaved} />
+          <ScoreEditor match={match} staged={staged} onStage={onStage} />
         </footer>
       </div>
     </div>

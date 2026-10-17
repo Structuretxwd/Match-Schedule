@@ -12,13 +12,31 @@ export type PendingChange = {
   patch: Partial<Pick<StoredMatch, 'scoreA' | 'scoreB' | 'live' | 'scheduledAt'>>
 }
 
-/** 把尚未生效的改动叠加到服务端数据上 */
+/**
+ * 本地暂存（草稿）的改动，key 为比赛 id。
+ * 只活在当前页面会话里：立即参与预览，但不写仓库，直到管理员点「全部提交」。
+ */
+export type StagedEdits = Record<string, PendingChange['patch']>
+
+/** 暂存 map → applyPending 需要的列表 */
+export function stagedToPending(staged: StagedEdits): PendingChange[] {
+  return Object.entries(staged).map(([matchId, patch]) => ({ matchId, patch }))
+}
+
+/**
+ * 把尚未生效的改动叠加到服务端数据上。
+ * 同一场比赛的多条改动会按顺序合并：后一条只覆盖它自己声明的字段，
+ * 因此「已提交待重建」的改动与「本地暂存」的改动可以共存，且暂存的部分优先。
+ */
 export function applyPending(event: TournamentEvent, pending: PendingChange[]): TournamentEvent {
   if (pending.length === 0) return event
-  const byId = new Map(pending.map((p) => [p.matchId, p.patch]))
+  const patches = new Map<string, PendingChange['patch']>()
+  for (const p of pending) {
+    patches.set(p.matchId, { ...patches.get(p.matchId), ...p.patch })
+  }
   let changed = false
   const matches = event.matches.map((m) => {
-    const patch = byId.get(m.id)
+    const patch = patches.get(m.id)
     if (!patch) return m
     const merged: StoredMatch = { ...m, ...patch }
     if (

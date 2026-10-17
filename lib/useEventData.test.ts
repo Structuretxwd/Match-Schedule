@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { generateTemplate } from './bracket/generate'
 import type { TournamentEvent } from './data/schema'
-import { applyPending, prunePending } from './useEventData'
+import { applyPending, prunePending, stagedToPending } from './useEventData'
 
 function makeEvent(scores: Record<string, [number, number]> = {}): TournamentEvent {
   const n = 8 as const
@@ -69,6 +69,39 @@ describe('applyPending', () => {
     const out = applyPending(ev, [{ matchId: 'WB-R1-M1', patch: { scoreA: 2, scoreB: 0 } }])
     const m2 = out.matches.find((x) => x.id === 'WB-R1-M2')!
     expect([m2.scoreA, m2.scoreB]).toEqual([0, 2])
+  })
+
+  it('同一场比赛的多条改动会合并：后面的只覆盖自己声明的字段', () => {
+    const ev = makeEvent()
+    const out = applyPending(ev, [
+      { matchId: 'WB-R1-M1', patch: { scoreA: 2, scoreB: 0 } },
+      { matchId: 'WB-R1-M1', patch: { scheduledAt: '2026-10-05T20:00:00+08:00' } },
+    ])
+    const m = out.matches.find((x) => x.id === 'WB-R1-M1')!
+    expect([m.scoreA, m.scoreB]).toEqual([2, 0])
+    expect(m.scheduledAt).toBe('2026-10-05T20:00:00+08:00')
+  })
+
+  it('后一条改动可以覆盖前一条的同一字段', () => {
+    const ev = makeEvent()
+    const out = applyPending(ev, [
+      { matchId: 'WB-R1-M1', patch: { scheduledAt: '2026-10-05T20:00:00+08:00' } },
+      { matchId: 'WB-R1-M1', patch: { scheduledAt: null } },
+    ])
+    expect(out.matches.find((x) => x.id === 'WB-R1-M1')!.scheduledAt).toBeNull()
+  })
+})
+
+describe('stagedToPending', () => {
+  it('把暂存 map 拍平成待提交列表', () => {
+    expect(stagedToPending({ 'WB-R1-M1': { scoreA: 2 }, 'WB-R1-M2': { live: true } })).toEqual([
+      { matchId: 'WB-R1-M1', patch: { scoreA: 2 } },
+      { matchId: 'WB-R1-M2', patch: { live: true } },
+    ])
+  })
+
+  it('空暂存返回空数组', () => {
+    expect(stagedToPending({})).toEqual([])
   })
 })
 

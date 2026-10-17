@@ -3,9 +3,16 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { deriveBracket } from '@/lib/bracket/advance'
-import type { TournamentEvent } from '@/lib/data/schema'
-import { prunePending, useEventData, type PendingChange } from '@/lib/useEventData'
+import { parseEvent, type TournamentEvent } from '@/lib/data/schema'
+import {
+  prunePending,
+  stagedToPending,
+  useEventData,
+  type PendingChange,
+  type StagedEdits,
+} from '@/lib/useEventData'
 import { formatDateTime } from '@/lib/view'
+import { useAuth } from './auth/AuthProvider'
 import { BracketView } from './BracketView'
 import { MatchDetailDialog } from './MatchDetailDialog'
 import { ScheduleView } from './ScheduleView'
@@ -41,9 +48,19 @@ export function EventClient({ initial, view }: EventClientProps) {
 }
 
 function EventLive({ initial, view }: { initial: TournamentEvent; view: EventViewKind }) {
+  const { isAdmin, mutate } = useAuth()
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
   const [pending, setPending] = useState<PendingChange[]>([])
-  const { event, remote, error, lastFetchedAt } = useEventData(initial, pending)
+  // 本地草稿：立即参与预览，但不写仓库，直到点「全部提交」
+  const [staged, setStaged] = useState<StagedEdits>({})
+  const [commitBusy, setCommitBusy] = useState(false)
+  const [commitError, setCommitError] = useState<string | null>(null)
+  const [commitNotice, setCommitNotice] = useState<string | null>(null)
+
+  const stagedList = useMemo(() => stagedToPending(staged), [staged])
+  // 暂存放后面：同一场比赛上两边都有改动时，草稿里的字段优先
+  const overrides = useMemo(() => [...pending, ...stagedList], [pending, stagedList])
+  const { event, remote, error, lastFetchedAt } = useEventData(initial, overrides)
   const derived = useMemo(() => deriveBracket(event), [event])
   const selected = selectedMatchId ? derived.byId[selectedMatchId] : null
 
@@ -54,6 +71,55 @@ function EventLive({ initial, view }: { initial: TournamentEvent; view: EventVie
       return next.length === current.length ? current : next
     })
   }, [remote])
+
+  // 草稿只存在内存里，刷新即丢；有未提交的改动时提醒一下
+  useEffect(() => {
+    if (stagedList.length === 0) return
+    function guard(e: BeforeUnloadEvent) {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', guard)
+    return () => window.removeEventListener('beforeunload', guard)
+  }, [stagedList.length])
+
+  function stage(matchId: string, patch: PendingChange['patch']) {
+    setCommitNotice(null)
+    setStaged((current) => ({ ...current, [matchId]: { ...current[matchId], ...patch } }))
+  }
+
+  /** 把全部草稿合成一次写入，只触发一次 Actions 重建 */
+  async function commitStaged() {
+    if (commitBusy || stagedList.length === 0) return
+    setCommitBusy(true)
+    setCommitError(null)
+    setCommitNotice(null)
+
+    const changes = stagedList
+    const outcome = await mutate<TournamentEvent>({
+      path: `public/data/events/${event.id}.json`,
+      parse: parseEvent,
+      mutate: (current) => ({
+        ...current,
+        matches: current.matches.map((m) => {
+          const patch = staged[m.id]
+          return patch ? { ...m, ...patch } : m
+        }),
+        updatedAt: new Date().toISOString(),
+      }),
+      message: `chore(data): ${event.id} 批量更新 ${changes.length} 场比赛`,
+    })
+
+    setCommitBusy(false)
+    if (!outcome.ok) {
+      setCommitError(outcome.message)
+      return
+    }
+    // 已写入：并入 pending，继续按「等待重建」处理
+    setPending((current) => [...current.filter((p) => !(p.matchId in staged)), ...changes])
+    setStaged({})
+    setCommitNotice(`已提交 ${changes.length} 处改动，等待 GitHub Actions 重建后生效（约 1–2 分钟）。`)
+  }
 
   const finished = event.matches.filter((m) => m.scoreA !== null && m.scoreB !== null).length
   const champion = derived.championId
@@ -118,6 +184,44 @@ function EventLive({ initial, view }: { initial: TournamentEvent; view: EventVie
         </nav>
       </header>
 
+      {isAdmin && stagedList.length > 0 ? (
+        <div className="sticky top-0 z-40 -mx-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-y border-wb/40 bg-panel px-4 py-2 text-xs shadow-sm">
+          <span className="text-fg">{`待提交 ${stagedList.length} 场：改动已在本页预览，尚未写入仓库。`}</span>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              disabled={commitBusy}
+              onClick={() => void commitStaged()}
+              className="rounded border border-wb px-3 py-1 text-xs text-wb hover:bg-wb/10 disabled:opacity-40"
+            >
+              {commitBusy ? '提交中...' : '全部提交'}
+            </button>
+            <button
+              type="button"
+              disabled={commitBusy}
+              onClick={() => {
+                setStaged({})
+                setCommitNotice(null)
+                setCommitError(null)
+              }}
+              className="rounded border border-line px-3 py-1 text-xs text-muted hover:text-fg disabled:opacity-40"
+            >
+              撤销全部
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {commitError ? (
+        <p className="rounded border border-danger/40 bg-panel px-3 py-2 text-xs text-danger">
+          {commitError}
+        </p>
+      ) : null}
+
+      {commitNotice ? (
+        <p className="rounded border border-line bg-panel px-3 py-2 text-xs text-wb">{commitNotice}</p>
+      ) : null}
+
       {view === 'bracket' ? (
         <BracketView
           derived={derived}
@@ -134,11 +238,9 @@ function EventLive({ initial, view }: { initial: TournamentEvent; view: EventVie
         <MatchDetailDialog
           match={selected}
           derived={derived}
-          eventId={event.id}
           onClose={() => setSelectedMatchId(null)}
-          onSaved={(change) =>
-            setPending((current) => [...current.filter((p) => p.matchId !== change.matchId), change])
-          }
+          onStage={stage}
+          staged={staged[selected.id]}
         />
       ) : null}
     </div>
