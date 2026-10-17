@@ -1,0 +1,589 @@
+{
+  "id": "jsjx-zxdf-cup-01",
+  "name": "北京景山学校京西实验学校第一届追象定方杯中国个人赛",
+  "format": "single-elimination",
+  "bracketSize": 28,
+  "status": "draft",
+  "defaultBO": 1,
+  "grandFinalBO": 3,
+  "teams": [
+    {
+      "id": "t1",
+      "name": "彭子厚",
+      "seed": 1,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t2",
+      "name": "石一明",
+      "seed": 2,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t3",
+      "name": "罗靖雨",
+      "seed": 3,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t4",
+      "name": "李梓琦",
+      "seed": 4,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t5",
+      "name": "贾瑞疃",
+      "seed": 5,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t6",
+      "name": "王梓宁",
+      "seed": 6,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t7",
+      "name": "王九淞",
+      "seed": 7,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t8",
+      "name": "孙浩轩",
+      "seed": 8,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t9",
+      "name": "李宫曲",
+      "seed": 9,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t10",
+      "name": "刘源松",
+      "seed": 10,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t11",
+      "name": "张博润",
+      "seed": 11,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t12",
+      "name": "王淞布",
+      "seed": 12,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t13",
+      "name": "于文沅",
+      "seed": 13,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t14",
+      "name": "张宫图",
+      "seed": 14,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t15",
+      "name": "付胜柔",
+      "seed": 15,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t16",
+      "name": "杜文豪",
+      "seed": 16,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t17",
+      "name": "高晨峰",
+      "seed": 17,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t18",
+      "name": "刘世一",
+      "seed": 18,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t19",
+      "name": "周子涵",
+      "seed": 19,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t20",
+      "name": "佟逸墨",
+      "seed": 20,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t21",
+      "name": "李欣滢",
+      "seed": 21,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t22",
+      "name": "张子轩",
+      "seed": 22,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t23",
+      "name": "廉响",
+      "seed": 23,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t24",
+      "name": "李思博",
+      "seed": 24,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t25",
+      "name": "罗嘉成",
+      "seed": 25,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t26",
+      "name": "王昱昊",
+      "seed": 26,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t27",
+      "name": "张照翼",
+      "seed": 27,
+      "players": [],
+      "logo": null
+    },
+    {
+      "id": "t28",
+      "name": "侯启彤",
+      "seed": 28,
+      "players": [],
+      "logo": null
+    }
+  ],
+  "matches": [
+    {
+      "id": "WB-R1-M2",
+      "bracket": "WB",
+      "round": 1,
+      "index": 2,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R1-M3",
+      "bracket": "WB",
+      "round": 1,
+      "index": 3,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R1-M4",
+      "bracket": "WB",
+      "round": 1,
+      "index": 4,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R1-M6",
+      "bracket": "WB",
+      "round": 1,
+      "index": 6,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R1-M7",
+      "bracket": "WB",
+      "round": 1,
+      "index": 7,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R1-M8",
+      "bracket": "WB",
+      "round": 1,
+      "index": 8,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R1-M10",
+      "bracket": "WB",
+      "round": 1,
+      "index": 10,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R1-M11",
+      "bracket": "WB",
+      "round": 1,
+      "index": 11,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R1-M12",
+      "bracket": "WB",
+      "round": 1,
+      "index": 12,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R1-M14",
+      "bracket": "WB",
+      "round": 1,
+      "index": 14,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R1-M15",
+      "bracket": "WB",
+      "round": 1,
+      "index": 15,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R1-M16",
+      "bracket": "WB",
+      "round": 1,
+      "index": 16,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R2-M1",
+      "bracket": "WB",
+      "round": 2,
+      "index": 1,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R2-M2",
+      "bracket": "WB",
+      "round": 2,
+      "index": 2,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R2-M3",
+      "bracket": "WB",
+      "round": 2,
+      "index": 3,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R2-M4",
+      "bracket": "WB",
+      "round": 2,
+      "index": 4,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R2-M5",
+      "bracket": "WB",
+      "round": 2,
+      "index": 5,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R2-M6",
+      "bracket": "WB",
+      "round": 2,
+      "index": 6,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R2-M7",
+      "bracket": "WB",
+      "round": 2,
+      "index": 7,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R2-M8",
+      "bracket": "WB",
+      "round": 2,
+      "index": 8,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R3-M1",
+      "bracket": "WB",
+      "round": 3,
+      "index": 1,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R3-M2",
+      "bracket": "WB",
+      "round": 3,
+      "index": 2,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R3-M3",
+      "bracket": "WB",
+      "round": 3,
+      "index": 3,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R3-M4",
+      "bracket": "WB",
+      "round": 3,
+      "index": 4,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R4-M1",
+      "bracket": "WB",
+      "round": 4,
+      "index": 1,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "WB-R4-M2",
+      "bracket": "WB",
+      "round": 4,
+      "index": 2,
+      "bo": 1,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    },
+    {
+      "id": "GF",
+      "bracket": "GF",
+      "round": 1,
+      "index": 1,
+      "bo": 3,
+      "scoreA": null,
+      "scoreB": null,
+      "live": false,
+      "scheduledAt": null,
+      "referee": null,
+      "streamUrl": null,
+      "note": null
+    }
+  ],
+  "announcements": [],
+  "updatedAt": "2026-10-17T03:20:23.992Z"
+}
