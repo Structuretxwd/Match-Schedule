@@ -267,8 +267,8 @@
       "round": 1,
       "index": 10,
       "bo": 1,
-      "scoreA": null,
-      "scoreB": null,
+      "scoreA": 0,
+      "scoreB": 1,
       "live": false,
       "scheduledAt": "2026-10-19T12:30:00+08:00",
       "referee": null,
@@ -543,5 +543,5 @@
     }
   ],
   "announcements": [],
-  "updatedAt": "2026-10-19T05:02:44.656Z"
+  "updatedAt": "2026-10-19T09:49:05.050Z"
 }
