@@ -507,7 +507,7 @@
       "bo": 1,
       "scoreA": null,
       "scoreB": null,
-      "live": false,
+      "live": true,
       "scheduledAt": "2026-10-22T12:30:00+08:00",
       "referee": null,
       "streamUrl": null,
@@ -521,7 +521,7 @@
       "bo": 1,
       "scoreA": null,
       "scoreB": null,
-      "live": false,
+      "live": true,
       "scheduledAt": "2026-10-22T12:30:00+08:00",
       "referee": null,
       "streamUrl": null,
@@ -543,5 +543,5 @@
     }
   ],
   "announcements": [],
-  "updatedAt": "2026-10-21T04:46:05.935Z"
+  "updatedAt": "2026-10-22T04:35:00.291Z"
 }
