@@ -533,9 +533,9 @@
       "round": 1,
       "index": 1,
       "bo": 3,
-      "scoreA": null,
-      "scoreB": null,
-      "live": true,
+      "scoreA": 2,
+      "scoreB": 0,
+      "live": false,
       "scheduledAt": "2026-10-23T12:30:00+08:00",
       "referee": null,
       "streamUrl": null,
@@ -543,5 +543,5 @@
     }
   ],
   "announcements": [],
-  "updatedAt": "2026-10-22T13:47:50.433Z"
+  "updatedAt": "2026-10-23T04:51:44.051Z"
 }
